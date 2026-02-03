@@ -3,51 +3,90 @@ import { Kamer, Meubel } from '../types'
 // Schaal: 1 meter = 50 pixels
 export const PIXELS_PER_METER = 50
 
-// Appartement afmetingen gebaseerd op de plattegrond
+// Appartement afmetingen gebaseerd op de bouwtekening
 // Totaal: 8.27m breed x 10.34m diep
+// Het trappenhuis (2.10m breed) is gemeenschappelijke ruimte
+
+// Belangrijke horizontale maten (van links naar rechts):
+// - Onderaan: 3.70m (woonkamer) + 2.10m (trappenhuis) + 2.31m (slaapkamer 2) = 8.11m
+// - Bovenaan: 3.68m (keuken) + 3.06m (slaapkamer) + 1.43m (kast) = 8.17m
+
+// Belangrijke verticale maten (van boven naar beneden):
+// - Links: keuken/woonkamer loopt door tot 10.34m
+// - Rechts boven: 3.51m (slaapkamer + kast)
+// - Rechts midden: 1.94m (badkamer) + 0.89m (toilet)
+// - Rechts onder: 3.30m (slaapkamer 2)
 
 export const appartementKamers: Kamer[] = [
-  // Woonkamer (linksonder, grote ruimte)
-  {
-    id: 'woonkamer',
-    naam: 'Woonkamer',
-    x: 0,
-    y: 5.03,  // vanaf entree naar beneden
-    breedte: 3.70,
-    hoogte: 5.31,
-    kleur: '#e8e8e8'
-  },
-  // Keuken (linksboven)
+  // === KEUKEN/WOONKAMER (L-vormige open ruimte) ===
+
+  // De keuken en woonkamer vormen samen één grote L-vormige ruimte
+  // Ik splits dit visueel in twee delen voor de duidelijkheid
+
+  // Keuken deel (het smalle bovenstuk van de L)
+  // Loopt van linksboven naar beneden, 3.68m breed
+  // De keukenapparatuur staat aan de rechterkant (tegen de muur naar slaapkamer)
   {
     id: 'keuken',
     naam: 'Keuken',
     x: 0,
     y: 0,
     breedte: 3.68,
-    hoogte: 5.03,
-    kleur: '#e0e0e0'
+    hoogte: 5.20,  // Tot waar de L-vorm naar rechts uitsteekt
+    kleur: '#e8e8e8'
   },
-  // Slaapkamer 1 (rechtsboven)
+
+  // Woonkamer deel (het brede onderstuk van de L)
+  // 3.70m breed, loopt tot de onderkant van het gebouw
+  {
+    id: 'woonkamer',
+    naam: 'Woonkamer',
+    x: 0,
+    y: 5.20,
+    breedte: 3.70,
+    hoogte: 5.14,  // 10.34 - 5.20 = 5.14m
+    kleur: '#e8e8e8'  // Zelfde kleur als keuken (open ruimte)
+  },
+
+  // === SLAAPKAMER 1 (rechtsboven) ===
+  // De grote slaapkamer, 3.06m breed x 3.51m diep
   {
     id: 'slaapkamer1',
-    naam: 'Slaapkamer 1',
+    naam: 'Slaapkamer',
     x: 3.68,
     y: 0,
     breedte: 3.06,
     hoogte: 3.51,
-    kleur: '#d4e5f7'
+    kleur: '#dce8f0'
   },
-  // Kast (rechts van slaapkamer 1)
+
+  // === KAST (naast slaapkamer 1) ===
+  // Inbouwkast, 1.43m breed x 3.51m diep
   {
     id: 'kast',
     naam: 'Kast',
-    x: 6.74,
+    x: 6.74,  // 3.68 + 3.06
     y: 0,
-    breedte: 1.43,
+    breedte: 1.53,  // 8.27 - 6.74
     hoogte: 3.51,
-    kleur: '#c9c9c9'
+    kleur: '#c8c8c8'
   },
-  // Badkamer
+
+  // === ENTREE (donkerblauw in tekening) ===
+  // Klein gangetje tussen keuken en badkamer/trappenhuis
+  {
+    id: 'entree',
+    naam: 'Entree',
+    x: 3.68,
+    y: 3.51,
+    breedte: 2.28,
+    hoogte: 2.83,  // Tot aan de bovenkant van het trappenhuis
+    kleur: '#4a6078'  // Donkerder om gang aan te duiden
+  },
+
+  // === BADKAMER ===
+  // Rechts van de entree, 2.31m breed x 1.94m diep
+  // Bevat douche/bad (rond element rechts in tekening)
   {
     id: 'badkamer',
     naam: 'Badkamer',
@@ -55,47 +94,58 @@ export const appartementKamers: Kamer[] = [
     y: 3.51,
     breedte: 2.31,
     hoogte: 1.94,
-    kleur: '#cce5ff'
+    kleur: '#c8dce8'
   },
-  // Toilet
+
+  // === TOILET ===
+  // Onder de badkamer, kleiner dan badkamer
+  // 0.89m diep
   {
     id: 'toilet',
     naam: 'Toilet',
-    x: 5.96,
-    y: 5.45,
-    breedte: 1.42,
+    x: 5.96,  // Gelijk met badkamer
+    y: 5.45,  // 3.51 + 1.94
+    breedte: 1.40,
     hoogte: 0.89,
-    kleur: '#cce5ff'
+    kleur: '#c8dce8'
   },
-  // Slaapkamer 2 (rechtsonder)
+
+  // === ALGEMEEN TRAPPENHUIS (gemeenschappelijk) ===
+  // Dit is GEEN onderdeel van het appartement
+  // 2.10m breed, begint onder de entree
+  {
+    id: 'trappenhuis',
+    naam: 'Trappenhuis',
+    x: 3.70,
+    y: 6.34,  // Direct onder de entree
+    breedte: 2.26,
+    hoogte: 4.00,  // Tot de onderkant
+    kleur: '#a0a8b0'  // Grijzer - niet van appartement
+  },
+
+  // === SLAAPKAMER 2 (rechtsonder) ===
+  // Rechts van het trappenhuis, 2.31m breed x 3.30m diep
   {
     id: 'slaapkamer2',
-    naam: 'Slaapkamer 2',
-    x: 5.96,
-    y: 6.34,
+    naam: 'Slaapkamer',
+    x: 5.96,  // Rechts, op lijn met badkamer/toilet
+    y: 7.04,  // 10.34 - 3.30 = 7.04
     breedte: 2.31,
     hoogte: 3.30,
-    kleur: '#d4e5f7'
+    kleur: '#dce8f0'
   },
-  // Entree (midden)
-  {
-    id: 'entree',
-    naam: 'Entree',
-    x: 3.70,
-    y: 3.51,
-    breedte: 2.26,
-    hoogte: 2.83,
-    kleur: '#f0f0f0'
-  },
-  // Balkon (boven de keuken)
+
+  // === BALKON ===
+  // Linksboven, toegankelijk vanuit de keuken
+  // Positie geschat op basis van tekening
   {
     id: 'balkon',
     naam: 'Balkon',
-    x: 0.5,
-    y: -1.5,
-    breedte: 2.0,
-    hoogte: 1.2,
-    kleur: '#d0d0d0'
+    x: 0.20,
+    y: -1.60,
+    breedte: 1.80,
+    hoogte: 1.40,
+    kleur: '#b0c0a8'
   }
 ]
 
