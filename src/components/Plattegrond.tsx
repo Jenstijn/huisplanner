@@ -27,17 +27,21 @@ export default function Plattegrond({
   const canvasHoogte = 10.34 * PIXELS_PER_METER + OFFSET_Y + 50
 
   const handleStageClick = (e: KonvaEventObject<MouseEvent>) => {
-    // Alleen als we op de stage zelf klikken, niet op een object
-    if (e.target === e.currentTarget) {
-      const stage = e.target.getStage()
-      if (stage) {
-        const pos = stage.getPointerPosition()
-        if (pos) {
-          // Converteer pixels naar meters
-          const meterX = (pos.x - OFFSET_X) / PIXELS_PER_METER
-          const meterY = (pos.y - OFFSET_Y) / PIXELS_PER_METER
-          onStageClick(meterX, meterY)
-        }
+    // Negeer clicks op geplaatste meubels (gemarkeerd met name="meubel")
+    const targetName = e.target.name()
+    if (targetName === 'meubel' || targetName === 'meubel-text') {
+      return
+    }
+
+    // Haal de stage op voor positie
+    const stage = e.target.getStage()
+    if (stage) {
+      const pos = stage.getPointerPosition()
+      if (pos) {
+        // Converteer pixels naar meters
+        const meterX = (pos.x - OFFSET_X) / PIXELS_PER_METER
+        const meterY = (pos.y - OFFSET_Y) / PIXELS_PER_METER
+        onStageClick(meterX, meterY)
       }
     }
   }
@@ -113,8 +117,7 @@ export default function Plattegrond({
               y={item.y * PIXELS_PER_METER + OFFSET_Y}
               rotation={item.rotatie}
               draggable
-              onClick={(e) => {
-                e.cancelBubble = true
+              onClick={() => {
                 onItemSelect(item.id)
               }}
               onDragEnd={(e) => {
@@ -124,6 +127,7 @@ export default function Plattegrond({
               }}
             >
               <Rect
+                name="meubel"
                 width={meubel.breedte * PIXELS_PER_METER}
                 height={meubel.hoogte * PIXELS_PER_METER}
                 fill={meubel.kleur}
@@ -134,6 +138,7 @@ export default function Plattegrond({
                 shadowBlur={isGeselecteerd ? 10 : 0}
               />
               <Text
+                name="meubel-text"
                 width={meubel.breedte * PIXELS_PER_METER}
                 height={meubel.hoogte * PIXELS_PER_METER}
                 text={meubel.naam}

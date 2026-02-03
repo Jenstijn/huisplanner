@@ -64,3 +64,18 @@ npm run lint
 - Houd code simpel en goed gedocumenteerd
 - Vermijd over-engineering
 - Focus op een werkende MVP eerst
+
+## Testing Workflow
+
+Bij het bouwen van nieuwe features moet je altijd je eigen werk testen:
+
+1. **Start de dev server** als deze nog niet draait (`npm run dev`)
+2. **Open de app in de browser** via de Chrome-extensie (navigeer naar http://localhost:5173)
+3. **Test de functionaliteit** visueel door:
+   - Screenshots te maken
+   - Interacties uit te voeren (klikken, slepen, formulieren invullen)
+   - Te controleren of de UI correct rendert
+4. **Fix eventuele fouten** direct als je ze tegenkomt
+5. **Bevestig pas dat iets klaar is** nadat je het werkend hebt gezien in de browser
+
+Dit voorkomt dat er bugs worden opgeleverd die pas later ontdekt worden.
