@@ -42,6 +42,24 @@ export interface Raam {
   richting: 'noord' | 'oost' | 'zuid' | 'west'
 }
 
+// Een opening in een muur (deur of raam)
+export interface MuurOpening {
+  type: 'deur' | 'raam'
+  t: number           // 0-1 positie langs de muur
+  breedte: number     // breedte in meters
+  swing?: 'links' | 'rechts' | 'schuif'  // deur swing richting
+}
+
+// Een muur met mogelijke openingen
+export interface Muur {
+  id: string
+  start: Punt         // startpunt van de muur
+  eind: Punt          // eindpunt van de muur
+  dikte: number       // dikte in cm
+  isBuiten?: boolean  // buitenmuur?
+  openings: MuurOpening[]
+}
+
 // Een ingebouwd element (kast, aanrecht, etc.)
 export interface IngebouwdElement {
   id: string
@@ -54,14 +72,29 @@ export interface IngebouwdElement {
   type: 'kast' | 'aanrecht' | 'wasmachine' | 'douche' | 'bad' | 'wc' | 'wastafel'
 }
 
+// Beschikbare standaard afmetingen voor een meubel
+export interface AfmetingOptie {
+  label: string        // bijv. "160cm x 200cm"
+  breedte: number      // in meters
+  hoogte: number       // in meters
+}
+
 // Een meubel dat geplaatst kan worden
 export interface Meubel {
   id: string
   naam: string
-  breedte: number
-  hoogte: number
+  breedte: number                    // standaard breedte in meters
+  hoogte: number                     // standaard hoogte in meters
   kleur: string
   icoon?: string
+  // Uitgebreide opties:
+  categorie?: 'woonkamer' | 'slaapkamer' | 'eetkamer' | 'accessoires'
+  beschikbareAfmetingen?: AfmetingOptie[]  // preset afmetingen
+  handmatigeAfmetingen?: boolean           // toestaan van custom afmetingen
+  minBreedte?: number                      // minimale breedte voor handmatig (meters)
+  maxBreedte?: number                      // maximale breedte voor handmatig
+  minHoogte?: number
+  maxHoogte?: number
 }
 
 // Een geplaatst meubel op de plattegrond
@@ -71,6 +104,9 @@ export interface GeplaatstMeubel {
   x: number
   y: number
   rotatie: number
+  // Custom afmetingen (overschrijft meubel defaults indien gezet):
+  customBreedte?: number
+  customHoogte?: number
 }
 
 // De volledige staat van de planner

@@ -79,3 +79,44 @@ Bij het bouwen van nieuwe features moet je altijd je eigen werk testen:
 5. **Bevestig pas dat iets klaar is** nadat je het werkend hebt gezien in de browser
 
 Dit voorkomt dat er bugs worden opgeleverd die pas later ontdekt worden.
+
+## Lessons Learned
+
+### Event Handling in React-Konva
+- Gebruik `e.cancelBubble = true` om event propagation te stoppen in Konva Group onClick handlers
+- Specifieke element handlers (Group onClick) triggeren VOOR Stage onClick
+- Reset state NA succesvolle acties, niet ervoor - dit voorkomt race conditions
+
+### Drag & Drop Implementatie
+- Native HTML5 drag werkt goed samen met Konva canvas
+- Drop zone vereist `onDragOver` met `e.preventDefault()` om drops te accepteren
+- Ghost preview via `setDragImage()` met een tijdelijk DOM element dat na 0ms wordt verwijderd
+- `e.dataTransfer.setData('application/json', ...)` voor meubel data overdracht
+
+### Snap Functionaliteit
+- Snap threshold van 20cm (0.2m) voelt natuurlijk aan voor muur-snap
+- Stoelen 15cm inschuiven onder tafel ziet er realistisch uit
+- Combineer snap prioriteiten: tafel-snap > muur-snap
+- Bereken overlap met muren door te controleren of meubel binnen muur bounds valt
+
+### State Management Patronen
+- Houd "te plaatsen meubel" (`tePlaatsenMeubelId`) en "geselecteerd geplaatst meubel" (`geselecteerdItemId`) strict gescheiden
+- Custom afmetingen apart bijhouden van meubel ID selectie (`customAfmetingen` state)
+- Reset plaatsingsmodus NA plaatsing, niet tijdens - voorkomt bugs bij meubel selectie
+
+### Meubel Afmetingen Systeem
+- `beschikbareAfmetingen?: AfmetingOptie[]` voor preset maten (dropdown)
+- `handmatigeAfmetingen?: boolean` voor custom invoer met min/max validatie
+- `customBreedte` en `customHoogte` op `GeplaatstMeubel` voor opslag van gekozen maten
+- Altijd fallback naar standaard meubel afmetingen: `item.customBreedte ?? meubel.breedte`
+
+### React-Konva Renderers
+- Maak herbruikbare render functies per meubel type (bank, tafel, stoel, etc.)
+- Gebruik een `meubelRenderers` map om icoon-string naar renderer te mappen
+- Geef `width`, `height`, en `isSelected` door als props voor flexibiliteit
+- L-vormige meubels (hoekbank) vereisen meerdere Rect componenten
+
+### TypeScript Best Practices
+- Definieer interfaces in aparte `types/index.ts` voor herbruikbaarheid
+- Gebruik `categorie?: 'woonkamer' | 'slaapkamer' | 'eetkamer' | 'accessoires'` voor type-safe categorieën
+- Optional chaining (`meubel?.beschikbareAfmetingen?.[index]`) voor veilige data access
