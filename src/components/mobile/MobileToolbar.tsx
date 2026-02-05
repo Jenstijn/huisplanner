@@ -166,16 +166,20 @@ export default function MobileToolbar({
         </div>
       )}
 
-      {/* Notitie input popup - alleen als item geselecteerd en input actief */}
+      {/* Notitie input popup - fixed overlay boven keyboard */}
       {geselecteerdItem && showNotitieInput && onNotitieChange && (
-        <div className="flex justify-center mb-3 animate-scale-in">
-          <div className="glass-pill px-3 py-2 flex flex-col gap-2 w-[280px]">
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-black/20" onClick={() => {
+          setShowNotitieInput(false)
+          setNotitieInput(geselecteerdItem?.notitie ?? '')
+        }}>
+          <div className="glass-pill px-4 py-3 flex flex-col gap-3 w-[300px] mx-4 animate-scale-in" onClick={(e) => e.stopPropagation()}>
+            <div className="text-sm font-medium text-slate-700">Notitie bewerken</div>
             <input
               type="text"
               value={notitieInput}
               onChange={(e) => setNotitieInput(e.target.value.slice(0, 100))}
               placeholder="Bijv. IKEA KALLAX, van oma..."
-              className="w-full px-3 py-2 text-sm bg-white/50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2.5 text-base bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               maxLength={100}
               autoFocus
             />
@@ -187,7 +191,7 @@ export default function MobileToolbar({
                     setShowNotitieInput(false)
                     setNotitieInput(geselecteerdItem?.notitie ?? '')
                   }}
-                  className="px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 rounded-lg active:scale-95"
+                  className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 rounded-lg active:scale-95"
                 >
                   Annuleer
                 </button>
@@ -197,7 +201,7 @@ export default function MobileToolbar({
                     onNotitieChange(trimmed || undefined)
                     setShowNotitieInput(false)
                   }}
-                  className="px-3 py-1.5 text-xs font-medium text-white bg-blue-500 rounded-lg active:scale-95"
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg active:scale-95"
                 >
                   Opslaan
                 </button>
