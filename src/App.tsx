@@ -4,6 +4,9 @@ import MeubelLijst from './components/MeubelLijst'
 import Toolbar from './components/Toolbar'
 import ZoomControls from './components/ZoomControls'
 import EigenschappenPaneel from './components/EigenschappenPaneel'
+import LoginScherm from './components/LoginScherm'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { usePlattegrond } from './hooks/usePlattegrond'
 import { GeplaatstMeubel } from './types'
 import { beschikbareMeubels, PIXELS_PER_METER } from './data/appartement'
 
@@ -14,12 +17,13 @@ const OFFSET = 40
 const CANVAS_BREEDTE_PX = CANVAS_BREEDTE_M * PIXELS_PER_METER + OFFSET * 2
 const CANVAS_HOOGTE_PX = CANVAS_HOOGTE_M * PIXELS_PER_METER + OFFSET * 2
 
-function App() {
+// Hoofd app content (na login)
+function AppContent() {
+  const { user, logout } = useAuth()
+  const { items: geplaatsteItems, loading: dataLoading, error: dataError, saveItems } = usePlattegrond()
+
   // Ref voor de canvas container om beschikbare ruimte te meten
   const canvasContainerRef = useRef<HTMLDivElement>(null)
-
-  // State voor geplaatste meubels
-  const [geplaatsteItems, setGeplaatsteItems] = useState<GeplaatstMeubel[]>([])
 
   // State voor geselecteerd meubel uit de lijst (om te plaatsen)
   const [tePlaatsenMeubelId, setTePlaatsenMeubelId] = useState<string | null>(null)
@@ -122,7 +126,8 @@ function App() {
             customHoogte: customAfmetingen.hoogte
           })
         }
-        setGeplaatsteItems([...geplaatsteItems, nieuwItem])
+        // Sla op naar Firebase
+        saveItems([...geplaatsteItems, nieuwItem])
         // Reset plaatsingsmodus na plaatsing
         setTePlaatsenMeubelId(null)
         setCustomAfmetingen(null)
@@ -142,17 +147,17 @@ function App() {
 
   // Item verplaatsen
   const handleItemMove = (id: string, x: number, y: number) => {
-    setGeplaatsteItems(items =>
-      items.map(item =>
-        item.id === id ? { ...item, x, y } : item
-      )
+    const updatedItems = geplaatsteItems.map(item =>
+      item.id === id ? { ...item, x, y } : item
     )
+    saveItems(updatedItems)
   }
 
   // Item verwijderen
   const handleVerwijderen = () => {
     if (geselecteerdItemId) {
-      setGeplaatsteItems(items => items.filter(item => item.id !== geselecteerdItemId))
+      const updatedItems = geplaatsteItems.filter(item => item.id !== geselecteerdItemId)
+      saveItems(updatedItems)
       setGeselecteerdItemId(null)
     }
   }
@@ -160,26 +165,24 @@ function App() {
   // Item roteren (90 graden)
   const handleRoteren = () => {
     if (geselecteerdItemId) {
-      setGeplaatsteItems(items =>
-        items.map(item =>
-          item.id === geselecteerdItemId
-            ? { ...item, rotatie: (item.rotatie + 90) % 360 }
-            : item
-        )
+      const updatedItems = geplaatsteItems.map(item =>
+        item.id === geselecteerdItemId
+          ? { ...item, rotatie: (item.rotatie + 90) % 360 }
+          : item
       )
+      saveItems(updatedItems)
     }
   }
 
   // Item roteren naar specifieke hoek (360 graden)
   const handleSetRotatie = (graden: number) => {
     if (geselecteerdItemId) {
-      setGeplaatsteItems(items =>
-        items.map(item =>
-          item.id === geselecteerdItemId
-            ? { ...item, rotatie: graden % 360 }
-            : item
-        )
+      const updatedItems = geplaatsteItems.map(item =>
+        item.id === geselecteerdItemId
+          ? { ...item, rotatie: graden % 360 }
+          : item
       )
+      saveItems(updatedItems)
     }
   }
 
@@ -201,18 +204,17 @@ function App() {
     const clampedBreedte = Math.max(minBreedte, Math.min(maxBreedte, nieuweBreedte))
     const clampedHoogte = Math.max(minHoogte, Math.min(maxHoogte, nieuweHoogte))
 
-    setGeplaatsteItems(items =>
-      items.map(item =>
-        item.id === id
-          ? { ...item, customBreedte: clampedBreedte, customHoogte: clampedHoogte }
-          : item
-      )
+    const updatedItems = geplaatsteItems.map(item =>
+      item.id === id
+        ? { ...item, customBreedte: clampedBreedte, customHoogte: clampedHoogte }
+        : item
     )
+    saveItems(updatedItems)
   }
 
   // Alles wissen
   const handleAllesWissen = () => {
-    setGeplaatsteItems([])
+    saveItems([])
     setGeselecteerdItemId(null)
     setTePlaatsenMeubelId(null)
     setCustomAfmetingen(null)
@@ -236,11 +238,47 @@ function App() {
           customHoogte
         })
       }
-      setGeplaatsteItems([...geplaatsteItems, nieuwItem])
+      // Sla op naar Firebase
+      saveItems([...geplaatsteItems, nieuwItem])
       // Reset selectie na drop
       setTePlaatsenMeubelId(null)
       setCustomAfmetingen(null)
     }
+  }
+
+  // Loading state
+  if (dataLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600">Plattegrond laden...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Error state
+  if (dataError) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
+        <div className="text-center bg-white p-8 rounded-2xl shadow-lg max-w-md">
+          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h2 className="text-lg font-semibold text-slate-800 mb-2">Er ging iets mis</h2>
+          <p className="text-slate-600 mb-4">{dataError}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            Probeer opnieuw
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -261,9 +299,16 @@ function App() {
           </div>
 
           <div className="flex items-center gap-4">
+            {/* Sync indicator */}
+            <div className="flex items-center gap-2 text-sm text-slate-500">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span>Gesynchroniseerd</span>
+            </div>
+
             <div className="text-sm text-slate-500">
               <span className="font-medium text-slate-700">{geplaatsteItems.length}</span> meubels geplaatst
             </div>
+
             {geplaatsteItems.length > 0 && (
               <button
                 onClick={handleAllesWissen}
@@ -272,6 +317,29 @@ function App() {
                 Wis alles
               </button>
             )}
+
+            {/* User info & logout */}
+            <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
+              {user?.photoURL && (
+                <img
+                  src={user.photoURL}
+                  alt={user.displayName || 'Gebruiker'}
+                  className="w-8 h-8 rounded-full"
+                />
+              )}
+              <div className="text-sm">
+                <div className="font-medium text-slate-700">{user?.displayName || 'Gebruiker'}</div>
+              </div>
+              <button
+                onClick={logout}
+                className="px-3 py-1.5 text-sm text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+                title="Uitloggen"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -420,6 +488,40 @@ function App() {
         )}
       </div>
     </div>
+  )
+}
+
+// Wrapper component met auth check
+function AppWithAuth() {
+  const { user, loading } = useAuth()
+
+  // Loading state tijdens auth check
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600">Laden...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Niet ingelogd -> login scherm
+  if (!user) {
+    return <LoginScherm />
+  }
+
+  // Ingelogd -> app content
+  return <AppContent />
+}
+
+// Root App component met AuthProvider
+function App() {
+  return (
+    <AuthProvider>
+      <AppWithAuth />
+    </AuthProvider>
   )
 }
 
