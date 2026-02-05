@@ -172,40 +172,40 @@ export default function MobileToolbar({
           setShowNotitieInput(false)
           setNotitieInput(geselecteerdItem?.notitie ?? '')
         }}>
-          <div className="glass-pill px-4 py-3 flex flex-col gap-3 w-[300px] mx-4 animate-scale-in" onClick={(e) => e.stopPropagation()}>
-            <div className="text-sm font-medium text-slate-700">Notitie bewerken</div>
-            <input
-              type="text"
-              value={notitieInput}
-              onChange={(e) => setNotitieInput(e.target.value.slice(0, 100))}
-              placeholder="Bijv. IKEA KALLAX, van oma..."
-              className="w-full px-3 py-2.5 text-base bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              maxLength={100}
-              autoFocus
-            />
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400">{notitieInput.length}/100</span>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setShowNotitieInput(false)
-                    setNotitieInput(geselecteerdItem?.notitie ?? '')
-                  }}
-                  className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 rounded-lg active:scale-95"
-                >
-                  Annuleer
-                </button>
-                <button
-                  onClick={() => {
-                    const trimmed = notitieInput.trim()
-                    onNotitieChange(trimmed || undefined)
-                    setShowNotitieInput(false)
-                  }}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg active:scale-95"
-                >
-                  Opslaan
-                </button>
-              </div>
+          <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl px-4 py-4 flex flex-col gap-4 w-[320px] mx-4 animate-scale-in border border-white/50" onClick={(e) => e.stopPropagation()}>
+            <div className="text-base font-semibold text-slate-800">Notitie bewerken</div>
+            <div>
+              <input
+                type="text"
+                value={notitieInput}
+                onChange={(e) => setNotitieInput(e.target.value.slice(0, 100))}
+                placeholder="Bijv. IKEA KALLAX, van oma..."
+                className="w-full px-3 py-3 text-base bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                maxLength={100}
+                autoFocus
+              />
+              <div className="text-xs text-slate-400 text-right mt-2">{notitieInput.length}/100</div>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowNotitieInput(false)
+                  setNotitieInput(geselecteerdItem?.notitie ?? '')
+                }}
+                className="px-5 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 rounded-xl active:scale-95"
+              >
+                Annuleer
+              </button>
+              <button
+                onClick={() => {
+                  const trimmed = notitieInput.trim()
+                  onNotitieChange(trimmed || undefined)
+                  setShowNotitieInput(false)
+                }}
+                className="px-5 py-2.5 text-sm font-medium text-white bg-blue-500 rounded-xl active:scale-95"
+              >
+                Opslaan
+              </button>
             </div>
           </div>
         </div>
