@@ -6,15 +6,17 @@ import ZoomControls from './components/ZoomControls'
 import EigenschappenPaneel from './components/EigenschappenPaneel'
 import LoginScherm from './components/LoginScherm'
 import LayoutSelector from './components/LayoutSelector'
+import ShareDialog from './components/ShareDialog'
 import MobileAppContent from './components/mobile/MobileAppContent'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { usePlattegrond } from './hooks/usePlattegrond'
+import { useSharing } from './hooks/useSharing'
 import { useIsMobile } from './hooks/useIsMobile'
-import { GeplaatstMeubel } from './types'
+import { GeplaatstMeubel, Layout } from './types'
 import { beschikbareMeubels, PIXELS_PER_METER } from './data/appartement'
 
 // App versie - update bij elke release
-const APP_VERSION = '1.3.0'
+const APP_VERSION = '1.4.0'
 
 // Canvas dimensies (moet overeenkomen met Plattegrond.tsx)
 const CANVAS_BREEDTE_M = 9
@@ -27,6 +29,8 @@ const CANVAS_HOOGTE_PX = CANVAS_HOOGTE_M * PIXELS_PER_METER + OFFSET * 2
 function AppContent() {
   const { user, logout } = useAuth()
   const { isMobile } = useIsMobile()
+
+  // Plattegrond hook met user-specifieke data
   const {
     items: geplaatsteItems,
     loading: dataLoading,
@@ -38,8 +42,59 @@ function AppContent() {
     createLayout,
     renameLayout,
     duplicateLayout,
-    deleteLayout
-  } = usePlattegrond()
+    deleteLayout,
+    sharedWithMe: _sharedWithMe,          // TODO: Gebruiken in LayoutSelector
+    viewingShareId: _viewingShareId,      // TODO: Gebruiken in LayoutSelector
+    isViewingShared: _isViewingShared,    // TODO: UI indicator
+    viewSharedLayout: _viewSharedLayout,  // TODO: Gebruiken in LayoutSelector
+    stopViewingShared: _stopViewingShared,// TODO: Gebruiken in LayoutSelector
+    canEdit
+  } = usePlattegrond({
+    userId: user?.uid ?? null,
+    userEmail: user?.email ?? null,
+    userName: user?.displayName ?? null
+  })
+
+  // Sharing hook voor delen functionaliteit
+  const {
+    sharing: _sharing,                        // TODO: Loading state voor UI
+    error: _shareError,                       // TODO: Error display
+    pendingInvites: _pendingInvites,          // TODO: Notificaties
+    createShareLink,
+    inviteByEmail,
+    acceptShareByToken,
+    removeUserFromShare: _removeUserFromShare,// TODO: ShareDialog - user management
+    revokeShareLink: _revokeShareLink,        // TODO: ShareDialog - link management
+    deleteShare: _deleteShare,                // TODO: ShareDialog - delete share
+    getShareInfo,
+    syncLayoutToShare: _syncLayoutToShare     // TODO: Auto-sync
+  } = useSharing({
+    userId: user?.uid ?? null,
+    userEmail: user?.email ?? null,
+    userName: user?.displayName ?? null
+  })
+
+  // State voor ShareDialog
+  const [shareDialogLayout, setShareDialogLayout] = useState<Layout | null>(null)
+
+  // Check voor share token in URL bij mount
+  useEffect(() => {
+    const checkShareToken = async () => {
+      const path = window.location.pathname
+      if (path.startsWith('/share/')) {
+        const token = path.replace('/share/', '')
+        if (token && user?.uid) {
+          const result = await acceptShareByToken(token)
+          if (result.success) {
+            // Redirect naar home en toon shared layout
+            window.history.replaceState({}, '', '/')
+            // Layout wordt automatisch getoond via sharedWithMe
+          }
+        }
+      }
+    }
+    checkShareToken()
+  }, [user?.uid, acceptShareByToken])
 
   // Loading state
   if (dataLoading) {
@@ -77,13 +132,14 @@ function AppContent() {
   }
 
   // Mobile versie
+  // TODO: Voeg sharing props toe aan MobileAppContent wanneer ShareDialog klaar is
   if (isMobile) {
     return (
       <MobileAppContent
         user={user}
         logout={logout}
         geplaatsteItems={geplaatsteItems}
-        saveItems={saveItems}
+        saveItems={canEdit ? saveItems : () => {}} // Alleen opslaan als edit rechten
         layouts={layouts}
         activeLayoutId={activeLayoutId}
         switchLayout={switchLayout}
@@ -97,19 +153,32 @@ function AppContent() {
 
   // Desktop versie
   return (
-    <DesktopAppContent
-      user={user}
-      logout={logout}
-      geplaatsteItems={geplaatsteItems}
-      saveItems={saveItems}
-      layouts={layouts}
-      activeLayoutId={activeLayoutId}
-      switchLayout={switchLayout}
-      createLayout={createLayout}
-      renameLayout={renameLayout}
-      duplicateLayout={duplicateLayout}
-      deleteLayout={deleteLayout}
-    />
+    <>
+      <DesktopAppContent
+        user={user}
+        logout={logout}
+        geplaatsteItems={geplaatsteItems}
+        saveItems={canEdit ? saveItems : () => {}} // Alleen opslaan als edit rechten
+        layouts={layouts}
+        activeLayoutId={activeLayoutId}
+        switchLayout={switchLayout}
+        createLayout={createLayout}
+        renameLayout={renameLayout}
+        duplicateLayout={duplicateLayout}
+        deleteLayout={deleteLayout}
+        onShareLayout={setShareDialogLayout}
+      />
+
+      {/* Share Dialog */}
+      <ShareDialog
+        isOpen={shareDialogLayout !== null}
+        onClose={() => setShareDialogLayout(null)}
+        layout={shareDialogLayout}
+        createShareLink={createShareLink}
+        inviteByEmail={inviteByEmail}
+        getShareInfo={getShareInfo}
+      />
+    </>
   )
 }
 
@@ -125,19 +194,21 @@ function DesktopAppContent({
   createLayout,
   renameLayout,
   duplicateLayout,
-  deleteLayout
+  deleteLayout,
+  onShareLayout
 }: {
   user: ReturnType<typeof useAuth>['user']
   logout: () => void
   geplaatsteItems: GeplaatstMeubel[]
   saveItems: (items: GeplaatstMeubel[]) => void
-  layouts: ReturnType<typeof usePlattegrond>['layouts']
+  layouts: Layout[]
   activeLayoutId: string
   switchLayout: (id: string) => void
   createLayout: (naam: string) => Promise<string>
   renameLayout: (id: string, naam: string) => Promise<void>
   duplicateLayout: (id: string, naam: string) => Promise<string>
   deleteLayout: (id: string) => Promise<void>
+  onShareLayout: (layout: Layout) => void
 }) {
   // Ref voor de canvas container om beschikbare ruimte te meten
   const canvasContainerRef = useRef<HTMLDivElement>(null)
@@ -416,6 +487,7 @@ function DesktopAppContent({
               onRename={renameLayout}
               onDuplicate={duplicateLayout}
               onDelete={deleteLayout}
+              onShare={onShareLayout}
             />
 
             <div className="text-sm text-slate-500">

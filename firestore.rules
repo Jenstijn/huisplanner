@@ -1,0 +1,77 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ========================================
+    // User's eigen data - volledige toegang
+    // ========================================
+    match /users/{uid}/plattegronden/{doc} {
+      // Alleen de eigenaar kan lezen en schrijven
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // ========================================
+    // Shares - gedeelde layouts
+    // ========================================
+    match /shares/{shareId} {
+      // Eigenaar heeft volledige toegang
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.ownerId;
+
+      // Schrijf toegang voor nieuwe shares
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
+
+      // Gedeelde users kunnen lezen
+      allow read: if request.auth != null && request.auth.uid in resource.data.sharedWith;
+
+      // Gedeelde users met 'edit' kunnen layoutSnapshot updaten
+      allow update: if request.auth != null
+        && request.auth.uid in resource.data.sharedWith
+        && resource.data.permission == 'edit'
+        // Alleen layoutSnapshot en updatedAt mogen aangepast worden
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.layoutId == resource.data.layoutId
+        && request.resource.data.permission == resource.data.permission
+        && request.resource.data.sharedWith == resource.data.sharedWith;
+
+      // Publieke toegang via shareLink token (voor accepteren)
+      allow read: if request.auth != null && resource.data.shareLink != null;
+
+      // Toevoegen aan sharedWith voor geauthenticeerde users
+      allow update: if request.auth != null
+        && !request.auth.uid in resource.data.sharedWith
+        && request.resource.data.sharedWith.hasAll([request.auth.uid])
+        && request.resource.data.sharedWith.size() == resource.data.sharedWith.size() + 1
+        // Alle andere velden moeten gelijk blijven
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.layoutId == resource.data.layoutId
+        && request.resource.data.permission == resource.data.permission;
+    }
+
+    // ========================================
+    // Share Invites - e-mail uitnodigingen
+    // ========================================
+    match /shareInvites/{inviteId} {
+      // Eigenaar van de gerelateerde share kan invites maken/verwijderen
+      allow create: if request.auth != null;
+      allow delete: if request.auth != null;
+
+      // Users kunnen invites lezen die naar hun e-mail zijn gestuurd
+      allow read: if request.auth != null;
+
+      // Users kunnen hun eigen invite status updaten
+      allow update: if request.auth != null
+        && request.resource.data.status == 'accepted'
+        && resource.data.status == 'pending';
+    }
+
+    // ========================================
+    // Legacy: oude gedeelde plattegrond (voor migratie)
+    // ========================================
+    match /plattegronden/{docId} {
+      // Alleen lezen voor migratie
+      allow read: if request.auth != null;
+      // Schrijven uitgeschakeld voor legacy data
+      allow write: if false;
+    }
+  }
+}

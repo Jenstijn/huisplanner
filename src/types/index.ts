@@ -130,3 +130,47 @@ export interface PlattegrondData {
   layouts: Record<string, Layout>
   activeLayoutId: string
 }
+
+// ========================================
+// Sharing Types
+// ========================================
+
+// Permissie niveau voor gedeelde layouts
+export type SharePermission = 'view' | 'edit'
+
+// Een share record voor gedeelde toegang tot een layout
+export interface Share {
+  id: string
+  ownerId: string              // User ID van de eigenaar
+  ownerEmail?: string          // Email van eigenaar (voor display)
+  ownerName?: string           // Naam van eigenaar (voor display)
+  layoutId: string             // Welke layout is gedeeld
+  layoutNaam: string           // Naam van de layout (voor display)
+  layoutSnapshot: Layout       // Kopie van de layout data (voor real-time sync)
+  permission: SharePermission  // 'view' of 'edit'
+  sharedWith: string[]         // User IDs met toegang
+  shareLink?: string           // Optionele publieke deellink token
+  createdAt: Date
+  updatedAt: Date
+}
+
+// Een uitnodiging voor iemand die nog niet is ingelogd
+export interface ShareInvite {
+  id: string
+  email: string               // E-mailadres (lowercase)
+  shareId: string             // Verwijzing naar share document
+  invitedBy: string           // User ID van uitnodiger
+  invitedByName?: string      // Naam van uitnodiger
+  status: 'pending' | 'accepted'
+  createdAt: Date
+}
+
+// Info over een gedeelde layout (voor UI weergave)
+export interface SharedLayoutInfo {
+  shareId: string
+  layout: Layout
+  ownerName: string
+  ownerEmail: string
+  permission: SharePermission
+  isOwner: boolean
+}
