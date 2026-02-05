@@ -16,7 +16,7 @@ import { GeplaatstMeubel, Layout } from './types'
 import { beschikbareMeubels, PIXELS_PER_METER } from './data/appartement'
 
 // App versie - update bij elke release
-const APP_VERSION = '1.4.0'
+const APP_VERSION = '1.5.0'
 
 // Canvas dimensies (moet overeenkomen met Plattegrond.tsx)
 const CANVAS_BREEDTE_M = 9
@@ -132,22 +132,34 @@ function AppContent() {
   }
 
   // Mobile versie
-  // TODO: Voeg sharing props toe aan MobileAppContent wanneer ShareDialog klaar is
   if (isMobile) {
     return (
-      <MobileAppContent
-        user={user}
-        logout={logout}
-        geplaatsteItems={geplaatsteItems}
-        saveItems={canEdit ? saveItems : () => {}} // Alleen opslaan als edit rechten
-        layouts={layouts}
-        activeLayoutId={activeLayoutId}
-        switchLayout={switchLayout}
-        createLayout={createLayout}
-        renameLayout={renameLayout}
-        duplicateLayout={duplicateLayout}
-        deleteLayout={deleteLayout}
-      />
+      <>
+        <MobileAppContent
+          user={user}
+          logout={logout}
+          geplaatsteItems={geplaatsteItems}
+          saveItems={canEdit ? saveItems : () => {}} // Alleen opslaan als edit rechten
+          layouts={layouts}
+          activeLayoutId={activeLayoutId}
+          switchLayout={switchLayout}
+          createLayout={createLayout}
+          renameLayout={renameLayout}
+          duplicateLayout={duplicateLayout}
+          deleteLayout={deleteLayout}
+          onShareLayout={setShareDialogLayout}
+        />
+
+        {/* Share Dialog voor mobile */}
+        <ShareDialog
+          isOpen={shareDialogLayout !== null}
+          onClose={() => setShareDialogLayout(null)}
+          layout={shareDialogLayout}
+          createShareLink={createShareLink}
+          inviteByEmail={inviteByEmail}
+          getShareInfo={getShareInfo}
+        />
+      </>
     )
   }
 
@@ -489,6 +501,20 @@ function DesktopAppContent({
               onDelete={deleteLayout}
               onShare={onShareLayout}
             />
+
+            {/* Prominente Deel knop */}
+            <button
+              onClick={() => {
+                const activeLayout = layouts.find(l => l.id === activeLayoutId)
+                if (activeLayout) onShareLayout(activeLayout)
+              }}
+              className="flex items-center gap-2 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm font-medium"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              </svg>
+              Delen
+            </button>
 
             <div className="text-sm text-slate-500">
               <span className="font-medium text-slate-700">{geplaatsteItems.length}</span> meubels geplaatst

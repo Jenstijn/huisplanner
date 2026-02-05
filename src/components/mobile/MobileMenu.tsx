@@ -13,6 +13,8 @@ interface MobileMenuProps {
   onDuplicateLayout: (layoutId: string, naam: string) => Promise<string>
   aantalItems: number
   onAllesWissen: () => void
+  onShareLayout?: (layout: Layout) => void
+  activeLayout?: Layout
 }
 
 /**
@@ -30,9 +32,11 @@ export default function MobileMenu({
   onDeleteLayout,
   onDuplicateLayout,
   aantalItems,
-  onAllesWissen
+  onAllesWissen,
+  onShareLayout,
+  activeLayout: activeLayoutProp
 }: MobileMenuProps) {
-  const activeLayout = layouts.find(l => l.id === activeLayoutId)
+  const activeLayout = activeLayoutProp || layouts.find(l => l.id === activeLayoutId)
 
   const handleCreateLayout = async () => {
     const naam = prompt('Naam voor nieuwe layout:')
@@ -149,6 +153,32 @@ export default function MobileMenu({
                 </div>
               </div>
             </div>
+
+            {/* Samenwerken sectie */}
+            {onShareLayout && activeLayout && (
+              <div className="mb-4">
+                <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">
+                  Samenwerken
+                </div>
+                <button
+                  onClick={() => {
+                    onShareLayout(activeLayout)
+                    onClose()
+                  }}
+                  className="w-full glass-button flex items-center gap-3 px-3 py-2.5 text-left"
+                >
+                  <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/30">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <span className="text-sm text-slate-700 font-medium">Deel deze layout</span>
+                    <p className="text-xs text-slate-500">Werk samen via link of e-mail</p>
+                  </div>
+                </button>
+              </div>
+            )}
 
             {/* Layout acties */}
             <div className="mb-4">

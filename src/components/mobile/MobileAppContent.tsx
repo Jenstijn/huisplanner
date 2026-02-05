@@ -28,6 +28,7 @@ interface MobileAppContentProps {
   renameLayout: (layoutId: string, naam: string) => Promise<void>
   duplicateLayout: (layoutId: string, naam: string) => Promise<string>
   deleteLayout: (layoutId: string) => Promise<void>
+  onShareLayout?: (layout: Layout) => void
 }
 
 export default function MobileAppContent({
@@ -40,7 +41,8 @@ export default function MobileAppContent({
   switchLayout,
   createLayout,
   duplicateLayout,
-  deleteLayout
+  deleteLayout,
+  onShareLayout
 }: MobileAppContentProps) {
   // Refs
   const canvasContainerRef = useRef<HTMLDivElement>(null)
@@ -293,6 +295,8 @@ export default function MobileAppContent({
         onDuplicateLayout={duplicateLayout}
         aantalItems={geplaatsteItems.length}
         onAllesWissen={handleAllesWissen}
+        onShareLayout={onShareLayout}
+        activeLayout={layouts.find(l => l.id === activeLayoutId)}
       />
       </div>
     </div>
