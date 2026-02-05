@@ -82,3 +82,188 @@ button {
 .animate-pulse-subtle {
   animation: pulse-subtle 2s ease-in-out infinite;
 }
+
+/* ========================================
+   Liquid Glass Design System - iOS 26 Style
+   ======================================== */
+
+@layer components {
+  /* Base Glass Effect */
+  .glass {
+    background: rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(20px) saturate(1.8);
+    -webkit-backdrop-filter: blur(20px) saturate(1.8);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 24px;
+    box-shadow:
+      0 8px 32px rgba(31, 38, 135, 0.12),
+      inset 0 2px 16px rgba(255, 255, 255, 0.25);
+  }
+
+  /* Glass with accent tint */
+  .glass-tinted {
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(20px) saturate(1.8);
+    -webkit-backdrop-filter: blur(20px) saturate(1.8);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 24px;
+    box-shadow:
+      0 8px 32px rgba(31, 38, 135, 0.15),
+      inset 0 2px 20px rgba(255, 255, 255, 0.2);
+  }
+
+  /* Subtle glass for buttons/controls */
+  .glass-subtle {
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(12px) saturate(1.5);
+    -webkit-backdrop-filter: blur(12px) saturate(1.5);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    box-shadow:
+      0 4px 16px rgba(31, 38, 135, 0.08),
+      inset 0 1px 8px rgba(255, 255, 255, 0.15);
+  }
+
+  /* Active/Selected glass state */
+  .glass-active {
+    background: rgba(59, 130, 246, 0.2);
+    backdrop-filter: blur(20px) saturate(1.8);
+    -webkit-backdrop-filter: blur(20px) saturate(1.8);
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    border-radius: 24px;
+    box-shadow:
+      0 8px 32px rgba(59, 130, 246, 0.2),
+      inset 0 2px 16px rgba(255, 255, 255, 0.2);
+  }
+
+  /* Dark variant for modals/overlays */
+  .glass-dark {
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(24px) saturate(1.5);
+    -webkit-backdrop-filter: blur(24px) saturate(1.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  /* Floating pill/badge */
+  .glass-pill {
+    background: rgba(255, 255, 255, 0.22);
+    backdrop-filter: blur(16px) saturate(1.6);
+    -webkit-backdrop-filter: blur(16px) saturate(1.6);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 9999px;
+    box-shadow:
+      0 4px 20px rgba(31, 38, 135, 0.1),
+      inset 0 2px 12px rgba(255, 255, 255, 0.2);
+  }
+
+  /* Glass button */
+  .glass-button {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(12px) saturate(1.5);
+    -webkit-backdrop-filter: blur(12px) saturate(1.5);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 16px;
+    box-shadow:
+      0 4px 16px rgba(31, 38, 135, 0.08),
+      inset 0 1px 8px rgba(255, 255, 255, 0.15);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .glass-button:hover {
+    background: rgba(255, 255, 255, 0.22);
+    box-shadow:
+      0 6px 24px rgba(31, 38, 135, 0.12),
+      inset 0 2px 12px rgba(255, 255, 255, 0.2);
+  }
+
+  .glass-button:active {
+    transform: scale(0.97);
+    background: rgba(255, 255, 255, 0.28);
+  }
+
+  /* FAB (Floating Action Button) */
+  .glass-fab {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(16px) saturate(1.8);
+    -webkit-backdrop-filter: blur(16px) saturate(1.8);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    box-shadow:
+      0 6px 24px rgba(31, 38, 135, 0.15),
+      inset 0 2px 12px rgba(255, 255, 255, 0.2);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .glass-fab:active {
+    transform: scale(0.93);
+  }
+
+  /* Primary action FAB */
+  .glass-fab-primary {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.8), rgba(99, 102, 241, 0.8));
+    backdrop-filter: blur(16px) saturate(1.8);
+    -webkit-backdrop-filter: blur(16px) saturate(1.8);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 50%;
+    box-shadow:
+      0 8px 32px rgba(59, 130, 246, 0.35),
+      inset 0 2px 12px rgba(255, 255, 255, 0.2);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .glass-fab-primary:active {
+    transform: scale(0.93);
+  }
+}
+
+/* Glass highlight shimmer effect (optional) */
+@keyframes glassHighlight {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.glass-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: glassHighlight 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Safe area padding for notch devices */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .glass-shimmer::after {
+    animation: none;
+  }
+
+  .glass-button,
+  .glass-fab,
+  .glass-fab-primary {
+    transition: none;
+  }
+}

@@ -277,3 +277,43 @@ Dit voorkomt dat er bugs worden opgeleverd die pas later ontdekt worden.
 3. Sheet sluit → status bar toont "Tap om te plaatsen"
 4. Tap op canvas → meubel geplaatst
 5. Tap op meubel → selecteren voor roteer/verwijder
+
+### iOS 26 Liquid Glass Design (v1.3.0)
+**Design systeem** gebaseerd op Apple's iOS 26 Liquid Glass richtlijnen:
+
+**Core CSS classes** (`src/index.css`):
+- `.glass` - Standaard glass effect met blur en transparantie
+- `.glass-subtle` - Subtielere variant voor buttons/controls
+- `.glass-active` - Blue-tinted variant voor geselecteerde items
+- `.glass-dark` - Donkere variant voor modals
+- `.glass-pill` - Ronde pill/badge vorm
+- `.glass-button` - Button met hover/active states
+- `.glass-fab` - Floating Action Button (cirkel)
+- `.glass-fab-primary` - Primary FAB met gradient
+
+**Liquid Glass kenmerken:**
+- `backdrop-filter: blur(20px) saturate(1.8)` - Frosted glass blur
+- `background: rgba(255, 255, 255, 0.15-0.22)` - Semi-transparante achtergrond
+- `border: 1px solid rgba(255, 255, 255, 0.25-0.35)` - Subtiele rand
+- `box-shadow: inset highlight + outer depth shadow` - Diepte effect
+- `border-radius: 16-28px` - Afgeronde hoeken
+
+**Gradient mesh achtergrond:**
+```jsx
+<div className="bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-100">
+  <div className="absolute ... bg-blue-300/40 rounded-full blur-3xl" />
+  <div className="absolute ... bg-purple-300/30 rounded-full blur-3xl" />
+</div>
+```
+
+**Animaties** (`tailwind.config.js`):
+- `animate-float-up` - Fade in + slide up
+- `animate-slide-up` - Sheet slide in
+- `animate-fade-in` - Simple fade
+- `animate-scale-in` - Pop in met scale
+
+**Belangrijke principes (Apple HIG):**
+- Glass alleen op navigatie-laag, niet op content
+- "Avoid glass on glass" - geen gestapelde glass elementen
+- Hiërarchie door diepte, niet alleen kleur
+- Content-first: UI wijkt terug voor content

@@ -210,24 +210,34 @@ export default function MobileAppContent({
   }
 
   return (
-    <div className="h-screen flex flex-col bg-slate-100 overflow-hidden">
-      {/* Mobile Header */}
-      <MobileHeader
-        user={user}
-        layouts={layouts}
-        activeLayoutId={activeLayoutId}
-        onLayoutSwitch={switchLayout}
-        onMenuOpen={() => setMenuOpen(true)}
-      />
+    <div className="h-screen flex flex-col overflow-hidden relative">
+      {/* Liquid Glass Gradient Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-100">
+        {/* Animated gradient orbs for depth */}
+        <div className="absolute top-0 -left-1/4 w-96 h-96 bg-blue-300/40 rounded-full blur-3xl" />
+        <div className="absolute top-1/3 -right-1/4 w-80 h-80 bg-purple-300/30 rounded-full blur-3xl" />
+        <div className="absolute -bottom-20 left-1/4 w-72 h-72 bg-indigo-300/35 rounded-full blur-3xl" />
+      </div>
 
-      {/* Plattegrond Canvas */}
-      <div
-        ref={canvasContainerRef}
-        className="flex-1 overflow-hidden p-2"
-        style={{ touchAction: 'none' }}
-      >
-        <div className="h-full bg-white rounded-xl shadow-lg overflow-hidden">
-          <Plattegrond
+      {/* Content Layer */}
+      <div className="relative z-10 h-full flex flex-col">
+        {/* Mobile Header */}
+        <MobileHeader
+          user={user}
+          layouts={layouts}
+          activeLayoutId={activeLayoutId}
+          onLayoutSwitch={switchLayout}
+          onMenuOpen={() => setMenuOpen(true)}
+        />
+
+        {/* Plattegrond Canvas */}
+        <div
+          ref={canvasContainerRef}
+          className="flex-1 overflow-hidden p-3"
+          style={{ touchAction: 'none' }}
+        >
+          <div className="h-full glass overflow-hidden">
+            <Plattegrond
             geplaatsteItems={geplaatsteItems}
             geselecteerdItem={geselecteerdItemId}
             onItemSelect={handleItemSelect}
@@ -241,11 +251,11 @@ export default function MobileAppContent({
             lineaalModus={lineaalModus}
             onMeetResultaat={setMeetResultaat}
           />
+          </div>
         </div>
-      </div>
 
-      {/* Mobile Toolbar */}
-      <MobileToolbar
+        {/* Mobile Toolbar */}
+        <MobileToolbar
         tePlaatsenMeubelId={tePlaatsenMeubelId}
         geselecteerdItemId={geselecteerdItemId}
         geselecteerdItem={geplaatsteItems.find(i => i.id === geselecteerdItemId)}
@@ -284,6 +294,7 @@ export default function MobileAppContent({
         aantalItems={geplaatsteItems.length}
         onAllesWissen={handleAllesWissen}
       />
+      </div>
     </div>
   )
 }

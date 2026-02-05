@@ -12,8 +12,8 @@ interface BottomSheetProps {
 }
 
 /**
- * Swipeable bottom sheet component voor mobile.
- * Ondersteunt drag-to-close en smooth animaties.
+ * Swipeable bottom sheet component met Liquid Glass design.
+ * iOS 26 style met glassmorphism effect en smooth animaties.
  */
 export default function BottomSheet({
   isOpen,
@@ -25,6 +25,7 @@ export default function BottomSheet({
 }: BottomSheetProps) {
   const [dragOffset, setDragOffset] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
+  const [isAnimatingIn, setIsAnimatingIn] = useState(false)
   const sheetRef = useRef<HTMLDivElement>(null)
   const startYRef = useRef(0)
   const currentYRef = useRef(0)
@@ -33,6 +34,12 @@ export default function BottomSheet({
   useEffect(() => {
     if (isOpen) {
       setDragOffset(0)
+      // Trigger entrance animation
+      requestAnimationFrame(() => {
+        setIsAnimatingIn(true)
+      })
+    } else {
+      setIsAnimatingIn(false)
     }
   }, [isOpen])
 
@@ -93,55 +100,71 @@ export default function BottomSheet({
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop with blur */}
       <div
-        className="fixed inset-0 bg-black/40 z-40 transition-opacity duration-300"
+        className="fixed inset-0 z-40 transition-all duration-300"
         onClick={canDismiss ? onClose : undefined}
-        style={{ opacity: Math.max(0, 1 - dragOffset / 200) }}
+        style={{
+          backgroundColor: `rgba(0, 0, 0, ${Math.max(0, 0.25 - dragOffset / 800)})`,
+          backdropFilter: `blur(${Math.max(0, 8 - dragOffset / 25)}px)`,
+          WebkitBackdropFilter: `blur(${Math.max(0, 8 - dragOffset / 25)}px)`,
+          opacity: isAnimatingIn ? 1 : 0,
+        }}
       />
 
-      {/* Sheet */}
+      {/* Sheet with glass effect */}
       <div
         ref={sheetRef}
-        className={`fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 shadow-2xl ${
+        className={`fixed bottom-0 left-0 right-0 z-50 ${
           isDragging ? '' : 'transition-transform duration-300 ease-out'
         }`}
         style={{
           height: sheetHeight,
-          transform: `translateY(${dragOffset}px)`,
+          transform: `translateY(${isAnimatingIn ? dragOffset : sheetHeight}px)`,
           maxHeight: '85vh'
         }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Drag handle */}
-        <div className="sheet-handle flex justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing">
-          <div className="w-12 h-1.5 bg-slate-300 rounded-full" />
-        </div>
-
-        {/* Header */}
-        {title && (
-          <div className="sheet-header flex items-center justify-between px-4 pb-3 border-b border-slate-100">
-            <h2 className="text-lg font-semibold text-slate-800">{title}</h2>
-            <button
-              onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 active:bg-slate-200"
-              aria-label="Sluiten"
-            >
-              <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        )}
-
-        {/* Content */}
-        <div
-          className="overflow-y-auto overscroll-contain"
-          style={{ height: title ? 'calc(100% - 60px)' : 'calc(100% - 24px)' }}
+        {/* Glass container */}
+        <div className="h-full rounded-t-[28px] overflow-hidden"
+          style={{
+            background: 'rgba(255, 255, 255, 0.85)',
+            backdropFilter: 'blur(40px) saturate(1.8)',
+            WebkitBackdropFilter: 'blur(40px) saturate(1.8)',
+            boxShadow: '0 -8px 40px rgba(31, 38, 135, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+            borderTop: '1px solid rgba(255, 255, 255, 0.5)',
+          }}
         >
-          {children}
+          {/* Drag handle */}
+          <div className="sheet-handle flex justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing">
+            <div className="w-10 h-1 bg-slate-400/50 rounded-full" />
+          </div>
+
+          {/* Header */}
+          {title && (
+            <div className="sheet-header flex items-center justify-between px-5 pb-3">
+              <h2 className="text-lg font-semibold text-slate-800">{title}</h2>
+              <button
+                onClick={onClose}
+                className="w-9 h-9 glass-fab flex items-center justify-center transition-all active:scale-90"
+                aria-label="Sluiten"
+              >
+                <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          )}
+
+          {/* Content */}
+          <div
+            className="overflow-y-auto overscroll-contain px-1"
+            style={{ height: title ? 'calc(100% - 60px)' : 'calc(100% - 24px)' }}
+          >
+            {children}
+          </div>
         </div>
       </div>
     </>
