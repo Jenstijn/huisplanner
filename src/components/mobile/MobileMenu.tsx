@@ -15,6 +15,9 @@ interface MobileMenuProps {
   onAllesWissen: () => void
   onShareLayout?: (layout: Layout) => void
   activeLayout?: Layout
+  appVersion?: string
+  hasNewVersion?: boolean
+  onOpenChangelog?: () => void
 }
 
 /**
@@ -34,7 +37,10 @@ export default function MobileMenu({
   aantalItems,
   onAllesWissen,
   onShareLayout,
-  activeLayout: activeLayoutProp
+  activeLayout: activeLayoutProp,
+  appVersion,
+  hasNewVersion,
+  onOpenChangelog
 }: MobileMenuProps) {
   const activeLayout = activeLayoutProp || layouts.find(l => l.id === activeLayoutId)
 
@@ -247,8 +253,30 @@ export default function MobileMenu({
             )}
           </div>
 
-          {/* Footer met logout */}
-          <div className="p-4">
+          {/* Footer met versie en logout */}
+          <div className="p-4 space-y-3">
+            {/* Wat is nieuw knop */}
+            {onOpenChangelog && (
+              <button
+                onClick={() => {
+                  onOpenChangelog()
+                  onClose()
+                }}
+                className="w-full glass-button flex items-center gap-3 px-3 py-2.5 text-left"
+              >
+                <div className="relative w-8 h-8 glass-fab flex items-center justify-center">
+                  {hasNewVersion && (
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-500 rounded-full" />
+                  )}
+                  <svg className="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <span className="text-sm text-slate-700">Wat is nieuw?</span>
+              </button>
+            )}
+
+            {/* Logout knop */}
             <button
               onClick={onLogout}
               className="w-full glass-button flex items-center justify-center gap-2 px-4 py-3"
@@ -258,6 +286,13 @@ export default function MobileMenu({
               </svg>
               <span className="text-sm font-medium text-slate-700">Uitloggen</span>
             </button>
+
+            {/* Versienummer */}
+            {appVersion && (
+              <div className="text-center text-xs text-slate-400 pt-2">
+                Huisplanner v{appVersion}
+              </div>
+            )}
           </div>
         </div>
       </div>

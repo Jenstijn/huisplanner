@@ -29,6 +29,9 @@ interface MobileAppContentProps {
   duplicateLayout: (layoutId: string, naam: string) => Promise<string>
   deleteLayout: (layoutId: string) => Promise<void>
   onShareLayout?: (layout: Layout) => void
+  appVersion?: string
+  hasNewVersion?: boolean
+  onOpenChangelog?: () => void
 }
 
 export default function MobileAppContent({
@@ -42,7 +45,10 @@ export default function MobileAppContent({
   createLayout,
   duplicateLayout,
   deleteLayout,
-  onShareLayout
+  onShareLayout,
+  appVersion,
+  hasNewVersion,
+  onOpenChangelog
 }: MobileAppContentProps) {
   // Refs
   const canvasContainerRef = useRef<HTMLDivElement>(null)
@@ -297,6 +303,9 @@ export default function MobileAppContent({
         onAllesWissen={handleAllesWissen}
         onShareLayout={onShareLayout}
         activeLayout={layouts.find(l => l.id === activeLayoutId)}
+        appVersion={appVersion}
+        hasNewVersion={hasNewVersion}
+        onOpenChangelog={onOpenChangelog}
       />
       </div>
     </div>

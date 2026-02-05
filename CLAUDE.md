@@ -209,6 +209,12 @@ Dit voorkomt dat er bugs worden opgeleverd die pas later ontdekt worden.
 - **Vercel auto-deploy**: Na push naar GitHub bouwt Vercel automatisch
 - **Environment variables**: Staan in Vercel dashboard, NIET in Git
 
+### Git Push Policy (BELANGRIJK!)
+- **NOOIT automatisch pushen** naar GitHub na wijzigingen
+- Altijd eerst aan gebruiker vragen: "Wil je dat ik dit push naar GitHub?"
+- Pas pushen na expliciete goedkeuring ("ja", "push", "doe maar", etc.)
+- Bij twijfel: NIET pushen, vraag eerst
+
 ### UI Wijzigingen Checklist (ALTIJD Controleren)
 **Na elke UI wijziging: controleer visueel op overflow/afsnijding issues**
 

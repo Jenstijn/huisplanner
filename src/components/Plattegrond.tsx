@@ -20,6 +20,7 @@ interface PlattegrondProps {
   onStageClick: (x: number, y: number) => void
   onDrop?: (meubelId: string, x: number, y: number, customBreedte?: number, customHoogte?: number) => void
   onItemResize?: (id: string, breedte: number, hoogte: number) => void
+  onItemRotate?: (id: string, rotatie: number) => void  // Nieuw: voor pinch-to-rotate
   // Zoom props
   zoom?: number
   stagePosition?: { x: number; y: number }
@@ -532,6 +533,7 @@ export default function Plattegrond({
   onStageClick,
   onDrop,
   onItemResize,
+  onItemRotate,
   zoom = 1,
   stagePosition = { x: 0, y: 0 },
   onZoomChange,
@@ -559,6 +561,13 @@ export default function Plattegrond({
   const lastTouchDistRef = useRef<number | null>(null)
   const lastTouchCenterRef = useRef<{ x: number; y: number } | null>(null)
   const isPinchingRef = useRef(false)
+
+  // Pinch-to-rotate state
+  const lastTouchAngleRef = useRef<number | null>(null)
+  const initialItemRotationRef = useRef<number>(0)
+
+  // Stage ref voor touch positie berekening
+  const stageRef = useRef<any>(null)
 
   // Bereken buitengrenzen één keer
   const buitenGrenzen = getBuitenGrenzen(muren)
@@ -611,19 +620,74 @@ export default function Plattegrond({
     }
   }
 
+  // Bereken hoek tussen twee touches (voor pinch-to-rotate)
+  const getAngleBetweenTouches = (touch1: Touch, touch2: Touch): number => {
+    const dx = touch2.clientX - touch1.clientX
+    const dy = touch2.clientY - touch1.clientY
+    return Math.atan2(dy, dx) * (180 / Math.PI)
+  }
+
+  // Helper voor touch positie naar meters (voor lineaal op iOS)
+  const getPositionInMetersFromTouch = (touch: Touch): { x: number; y: number } | null => {
+    const stage = stageRef.current
+    if (!stage) return null
+
+    const container = stage.container()
+    if (!container) return null
+
+    const rect = container.getBoundingClientRect()
+    const x = ((touch.clientX - rect.left - stagePosition.x) / zoom - OFFSET_X) / PIXELS_PER_METER
+    const y = ((touch.clientY - rect.top - stagePosition.y) / zoom - OFFSET_Y) / PIXELS_PER_METER
+
+    return { x, y }
+  }
+
   const handleTouchStart = (e: KonvaEventObject<TouchEvent>) => {
     const touches = e.evt.touches
+
+    // Single touch in lineaal modus
+    if (touches.length === 1 && lineaalModus) {
+      e.evt.preventDefault()
+      const pos = getPositionInMetersFromTouch(touches[0])
+      if (pos) {
+        setMeetStart(pos)
+        setMeetEind(pos)
+        setIsMeting(true)
+      }
+      return
+    }
+
+    // Two-finger gesture: pinch-to-zoom + pinch-to-rotate
     if (touches.length === 2) {
-      // Start pinch gesture
       isPinchingRef.current = true
       lastTouchDistRef.current = getDistance(touches[0], touches[1])
       lastTouchCenterRef.current = getCenter(touches[0], touches[1])
+
+      // Pinch-to-rotate: track angle als meubel geselecteerd is
+      if (geselecteerdItem && onItemRotate) {
+        lastTouchAngleRef.current = getAngleBetweenTouches(touches[0], touches[1])
+        const item = geplaatsteItems.find(i => i.id === geselecteerdItem)
+        initialItemRotationRef.current = item?.rotatie ?? 0
+      }
+
       e.evt.preventDefault()
     }
   }
 
   const handleTouchMove = (e: KonvaEventObject<TouchEvent>) => {
     const touches = e.evt.touches
+
+    // Single touch in lineaal modus: update meetlijn
+    if (touches.length === 1 && lineaalModus && isMeting) {
+      e.evt.preventDefault()
+      const pos = getPositionInMetersFromTouch(touches[0])
+      if (pos) {
+        setMeetEind(pos)
+      }
+      return
+    }
+
+    // Two-finger gesture: pinch-to-zoom + pinch-to-rotate
     if (touches.length === 2 && isPinchingRef.current) {
       e.evt.preventDefault()
 
@@ -664,6 +728,19 @@ export default function Plattegrond({
 
         onZoomChange?.(newZoom)
         onStageMove?.(newPos)
+
+        // Pinch-to-rotate: als meubel geselecteerd is, roteer het
+        if (geselecteerdItem && onItemRotate && lastTouchAngleRef.current !== null) {
+          const newAngle = getAngleBetweenTouches(touches[0], touches[1])
+          const angleDelta = newAngle - lastTouchAngleRef.current
+
+          // Bereken nieuwe rotatie (relatief aan initiële hoek)
+          let newRotation = initialItemRotationRef.current + angleDelta
+          // Normaliseer naar 0-360
+          newRotation = ((newRotation % 360) + 360) % 360
+
+          onItemRotate(geselecteerdItem, newRotation)
+        }
       }
 
       lastTouchDistRef.current = newDist
@@ -672,9 +749,28 @@ export default function Plattegrond({
   }
 
   const handleTouchEnd = () => {
+    // Lineaal modus: finaliseer meting
+    if (lineaalModus && isMeting && meetStart && meetEind) {
+      const dx = meetEind.x - meetStart.x
+      const dy = meetEind.y - meetStart.y
+      const afstand = Math.sqrt(dx * dx + dy * dy)
+
+      if (afstand > 0.05 && onMeetResultaat) {
+        onMeetResultaat({
+          afstand,
+          van: meetStart,
+          naar: meetEind
+        })
+      }
+      setIsMeting(false)
+    }
+
+    // Reset pinch/rotate state
     isPinchingRef.current = false
     lastTouchDistRef.current = null
     lastTouchCenterRef.current = null
+    lastTouchAngleRef.current = null
+    initialItemRotationRef.current = 0
   }
 
   // Helper functie om muis positie naar meters te converteren
@@ -793,13 +889,14 @@ export default function Plattegrond({
       className={`relative inline-block transition-all duration-200 ${isDraggingOver ? 'ring-4 ring-blue-400 ring-opacity-50 rounded-xl' : ''}`}
     >
     <Stage
+      ref={stageRef}
       width={canvasBreedte}
       height={canvasHoogte}
       scaleX={zoom}
       scaleY={zoom}
       x={stagePosition.x}
       y={stagePosition.y}
-      draggable={zoom > 1 && !lineaalModus && !isPinchingRef.current}
+      draggable={zoom > 1 && !lineaalModus && !isPinchingRef.current && !isMeting}
       onClick={handleStageClick}
       onTap={handleStageClick}
       onWheel={handleWheel}

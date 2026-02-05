@@ -7,16 +7,18 @@ import EigenschappenPaneel from './components/EigenschappenPaneel'
 import LoginScherm from './components/LoginScherm'
 import LayoutSelector from './components/LayoutSelector'
 import ShareDialog from './components/ShareDialog'
+import ChangelogDialog from './components/ChangelogDialog'
 import MobileAppContent from './components/mobile/MobileAppContent'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { usePlattegrond } from './hooks/usePlattegrond'
 import { useSharing } from './hooks/useSharing'
 import { useIsMobile } from './hooks/useIsMobile'
+import { useChangelog } from './hooks/useChangelog'
 import { GeplaatstMeubel, Layout } from './types'
 import { beschikbareMeubels, PIXELS_PER_METER } from './data/appartement'
 
 // App versie - update bij elke release
-const APP_VERSION = '1.5.0'
+const APP_VERSION = '1.6.0'
 
 // Canvas dimensies (moet overeenkomen met Plattegrond.tsx)
 const CANVAS_BREEDTE_M = 9
@@ -76,6 +78,9 @@ function AppContent() {
 
   // State voor ShareDialog
   const [shareDialogLayout, setShareDialogLayout] = useState<Layout | null>(null)
+
+  // Changelog state
+  const { showChangelog, hasNewVersion, openChangelog, closeChangelog } = useChangelog(APP_VERSION)
 
   // Check voor share token in URL bij mount
   useEffect(() => {
@@ -148,6 +153,9 @@ function AppContent() {
           duplicateLayout={duplicateLayout}
           deleteLayout={deleteLayout}
           onShareLayout={setShareDialogLayout}
+          appVersion={APP_VERSION}
+          hasNewVersion={hasNewVersion}
+          onOpenChangelog={openChangelog}
         />
 
         {/* Share Dialog voor mobile */}
@@ -158,6 +166,13 @@ function AppContent() {
           createShareLink={createShareLink}
           inviteByEmail={inviteByEmail}
           getShareInfo={getShareInfo}
+        />
+
+        {/* Changelog Dialog voor mobile */}
+        <ChangelogDialog
+          isOpen={showChangelog}
+          onClose={closeChangelog}
+          currentVersion={APP_VERSION}
         />
       </>
     )
@@ -179,6 +194,8 @@ function AppContent() {
         duplicateLayout={duplicateLayout}
         deleteLayout={deleteLayout}
         onShareLayout={setShareDialogLayout}
+        hasNewVersion={hasNewVersion}
+        onOpenChangelog={openChangelog}
       />
 
       {/* Share Dialog */}
@@ -189,6 +206,13 @@ function AppContent() {
         createShareLink={createShareLink}
         inviteByEmail={inviteByEmail}
         getShareInfo={getShareInfo}
+      />
+
+      {/* Changelog Dialog */}
+      <ChangelogDialog
+        isOpen={showChangelog}
+        onClose={closeChangelog}
+        currentVersion={APP_VERSION}
       />
     </>
   )
@@ -207,7 +231,9 @@ function DesktopAppContent({
   renameLayout,
   duplicateLayout,
   deleteLayout,
-  onShareLayout
+  onShareLayout,
+  hasNewVersion,
+  onOpenChangelog
 }: {
   user: ReturnType<typeof useAuth>['user']
   logout: () => void
@@ -221,6 +247,8 @@ function DesktopAppContent({
   duplicateLayout: (id: string, naam: string) => Promise<string>
   deleteLayout: (id: string) => Promise<void>
   onShareLayout: (layout: Layout) => void
+  hasNewVersion?: boolean
+  onOpenChangelog?: () => void
 }) {
   // Ref voor de canvas container om beschikbare ruimte te meten
   const canvasContainerRef = useRef<HTMLDivElement>(null)
@@ -560,15 +588,35 @@ function DesktopAppContent({
         <div className="h-full max-w-[1800px] mx-auto p-4">
           <div className="flex gap-4 h-full">
             {/* Linker sidebar: Meubel selectie */}
-            <aside className="w-72 h-full flex-shrink-0">
-            <MeubelLijst
-              geselecteerdMeubelId={tePlaatsenMeubelId}
-              onMeubelSelect={(id, afmetingen) => {
-                setTePlaatsenMeubelId(id)
-                setCustomAfmetingen(afmetingen ?? null)
-                setGeselecteerdItemId(null)
-              }}
-            />
+            <aside className="w-72 h-full flex-shrink-0 flex flex-col">
+              <div className="flex-1 overflow-hidden">
+                <MeubelLijst
+                  geselecteerdMeubelId={tePlaatsenMeubelId}
+                  onMeubelSelect={(id, afmetingen) => {
+                    setTePlaatsenMeubelId(id)
+                    setCustomAfmetingen(afmetingen ?? null)
+                    setGeselecteerdItemId(null)
+                  }}
+                />
+              </div>
+              {/* Versie en changelog onderaan sidebar */}
+              <div className="pt-3 pb-1 flex items-center justify-between text-xs text-slate-400 border-t border-slate-100">
+                <span>v{APP_VERSION}</span>
+                {onOpenChangelog && (
+                  <button
+                    onClick={onOpenChangelog}
+                    className="relative flex items-center gap-1 px-2 py-1 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
+                  >
+                    {hasNewVersion && (
+                      <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-blue-500 rounded-full" />
+                    )}
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Wat is nieuw?
+                  </button>
+                )}
+              </div>
             </aside>
 
             {/* Midden: Plattegrond */}
@@ -697,10 +745,6 @@ function DesktopAppContent({
         )}
       </div>
 
-      {/* Versienummer */}
-      <div className="fixed bottom-2 left-2 text-xs text-slate-400 z-10">
-        v{APP_VERSION}
-      </div>
     </div>
   )
 }
