@@ -323,3 +323,26 @@ Dit voorkomt dat er bugs worden opgeleverd die pas later ontdekt worden.
 - "Avoid glass on glass" - geen gestapelde glass elementen
 - Hiërarchie door diepte, niet alleen kleur
 - Content-first: UI wijkt terug voor content
+
+### UI Element Plaatsing (Fout Geleerd)
+- **FOUT:** Nieuwe UI elementen (versienummer, changelog knop) als losse `fixed` elementen geplaatst
+- **PROBLEEM:** Zwevende elementen voelen los en onsamenhangend, zien er amateuristisch uit
+- **CORRECT:** Integreer nieuwe elementen in bestaande UI containers (sidebar footer, header, menu)
+- **PATROON:** Bij nieuwe UI: eerst bepalen WAAR het logisch hoort (welke bestaande container)
+- **VOORBEELD:** Versienummer + changelog knop horen in sidebar footer, niet als losstaande overlay
+
+### Rotatie en Bounding Box (Fout Geleerd)
+- **FOUT:** `constrainToBounds` en `snapToWalls` gebruikten originele breedte/hoogte zonder rotatie
+- **PROBLEEM:** Gedraaide meubels (90°/270°) konden niet tegen muren geplaatst worden
+- **CORRECT:** Bij 90° of 270° rotatie worden effectieve breedte en hoogte verwisseld:
+  ```typescript
+  const isRotated90or270 = item.rotatie === 90 || item.rotatie === 270
+  const effectieveBreedte = isRotated90or270 ? baseHoogte : baseBreedte
+  const effectieveHoogte = isRotated90or270 ? baseBreedte : baseHoogte
+  ```
+- **PATROON:** Overal waar meubel dimensies gebruikt worden voor collision/constraint, rekening houden met rotatie
+
+### Google OAuth Testen
+- **BEPERKING:** Google OAuth login kan niet automatisch uitgevoerd worden (beveiligingsbeperking)
+- **WORKAROUND:** Gebruiker moet zelf inloggen via browser, daarna blijft sessie actief
+- **TIP:** Test auth-gerelateerde features handmatig of vraag gebruiker om in te loggen

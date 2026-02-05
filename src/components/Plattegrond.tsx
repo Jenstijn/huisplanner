@@ -1214,11 +1214,16 @@ export default function Plattegrond({
                 const rawX = (e.target.x() - OFFSET_X - width / 2) / PIXELS_PER_METER
                 const rawY = (e.target.y() - OFFSET_Y - height / 2) / PIXELS_PER_METER
 
-                const breedte = item.customBreedte ?? meubel.breedte
-                const hoogte = item.customHoogte ?? meubel.hoogte
+                const baseBreedte = item.customBreedte ?? meubel.breedte
+                const baseHoogte = item.customHoogte ?? meubel.hoogte
 
-                // 1. Eerst: harde grenzen (buitenmuren)
-                const bounded = constrainToBounds(rawX, rawY, breedte, hoogte, buitenGrenzen)
+                // Bij 90° of 270° rotatie worden effectieve breedte en hoogte verwisseld
+                const isRotated90or270 = item.rotatie === 90 || item.rotatie === 270
+                const effectieveBreedte = isRotated90or270 ? baseHoogte : baseBreedte
+                const effectieveHoogte = isRotated90or270 ? baseBreedte : baseHoogte
+
+                // 1. Eerst: harde grenzen (buitenmuren) - gebruik effectieve dimensies
+                const bounded = constrainToBounds(rawX, rawY, effectieveBreedte, effectieveHoogte, buitenGrenzen)
 
                 // 2. Dan: magnetische snap naar muren
                 let finalX = bounded.x
@@ -1227,7 +1232,7 @@ export default function Plattegrond({
                 // Check eerst voor stoel-naar-tafel snap
                 if (item.meubelId === 'eetkamerstoel') {
                   const tafelSnap = snapStoelToTafel(
-                    bounded.x, bounded.y, breedte, hoogte,
+                    bounded.x, bounded.y, effectieveBreedte, effectieveHoogte,
                     geplaatsteItems, beschikbareMeubels
                   )
                   if (tafelSnap.snapped) {
@@ -1238,7 +1243,7 @@ export default function Plattegrond({
 
                 // Anders: probeer snap naar muren
                 if (finalX === bounded.x && finalY === bounded.y) {
-                  const wallSnap = snapToWalls(bounded.x, bounded.y, breedte, hoogte, muren)
+                  const wallSnap = snapToWalls(bounded.x, bounded.y, effectieveBreedte, effectieveHoogte, muren)
                   if (wallSnap.snapped) {
                     finalX = wallSnap.x
                     finalY = wallSnap.y
