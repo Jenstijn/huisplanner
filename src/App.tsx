@@ -16,9 +16,10 @@ import { useIsMobile } from './hooks/useIsMobile'
 import { useChangelog } from './hooks/useChangelog'
 import { GeplaatstMeubel, Layout } from './types'
 import { beschikbareMeubels, PIXELS_PER_METER } from './data/appartement'
+import { exportStageToPdf } from './utils/exportPdf'
 
 // App versie - update bij elke release
-const APP_VERSION = '1.6.2'
+const APP_VERSION = '1.7.0'
 
 // Canvas dimensies (moet overeenkomen met Plattegrond.tsx)
 const CANVAS_BREEDTE_M = 9
@@ -271,6 +272,10 @@ function DesktopAppContent({
   const [lineaalModus, setLineaalModus] = useState(false)
   const [meetResultaat, setMeetResultaat] = useState<{ afstand: number; van: {x: number, y: number}; naar: {x: number, y: number} } | null>(null)
 
+  // State voor PDF export
+  const [plattegrondStageRef, setPlattegrondStageRef] = useState<React.RefObject<any> | null>(null)
+  const [isExporting, setIsExporting] = useState(false)
+
   // Bereken initiële zoom zodat hele plattegrond past
   useEffect(() => {
     if (zoomInitialized) return // Al geïnitialiseerd
@@ -494,6 +499,23 @@ function DesktopAppContent({
     }
   }
 
+  // PDF Export handler
+  const handleExportPdf = async () => {
+    if (!plattegrondStageRef) return
+
+    setIsExporting(true)
+    try {
+      const activeLayout = layouts.find(l => l.id === activeLayoutId)
+      const layoutNaam = activeLayout?.naam ?? 'Plattegrond'
+      await exportStageToPdf(plattegrondStageRef, layoutNaam)
+    } catch (error) {
+      console.error('PDF export fout:', error)
+      alert('Er ging iets mis bij het exporteren. Probeer het opnieuw.')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   return (
     <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Header - vaste hoogte */}
@@ -529,6 +551,26 @@ function DesktopAppContent({
               onDelete={deleteLayout}
               onShare={onShareLayout}
             />
+
+            {/* PDF Export knop */}
+            <button
+              onClick={handleExportPdf}
+              disabled={isExporting || !plattegrondStageRef}
+              className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Exporteer naar PDF"
+            >
+              {isExporting ? (
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              )}
+              PDF
+            </button>
 
             {/* Prominente Deel knop */}
             <button
@@ -653,6 +695,7 @@ function DesktopAppContent({
                 onStageMove={setStagePosition}
                 lineaalModus={lineaalModus}
                 onMeetResultaat={setMeetResultaat}
+                onStageRef={setPlattegrondStageRef}
               />
               </div>
 

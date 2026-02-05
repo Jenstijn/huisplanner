@@ -17,6 +17,16 @@ export interface Release {
 
 export const changelog: Release[] = [
   {
+    version: '1.7.0',
+    date: '2026-02-05',
+    title: 'PDF Export',
+    entries: [
+      { type: 'feature', description: 'Exporteer je plattegrond als PDF om te printen of delen' },
+      { type: 'feature', description: 'PDF bevat layout naam, datum en nette opmaak' },
+      { type: 'improvement', description: 'Export beschikbaar op zowel desktop als mobiel' },
+    ]
+  },
+  {
     version: '1.6.2',
     date: '2026-02-05',
     title: 'Verbeterde Rotatie Fix',

@@ -8,6 +8,7 @@ import BottomSheet from './BottomSheet'
 import MobileMeubelSelector from './MobileMeubelSelector'
 import { GeplaatstMeubel, Layout } from '../../types'
 import { beschikbareMeubels, PIXELS_PER_METER } from '../../data/appartement'
+import { exportStageToPdf } from '../../utils/exportPdf'
 
 // Canvas dimensies (moet overeenkomen met Plattegrond.tsx)
 const CANVAS_BREEDTE_M = 9
@@ -70,6 +71,10 @@ export default function MobileAppContent({
   // Lineaal state
   const [lineaalModus, setLineaalModus] = useState(false)
   const [meetResultaat, setMeetResultaat] = useState<{ afstand: number; van: {x: number, y: number}; naar: {x: number, y: number} } | null>(null)
+
+  // PDF export state
+  const [plattegrondStageRef, setPlattegrondStageRef] = useState<React.RefObject<any> | null>(null)
+  const [isExporting, setIsExporting] = useState(false)
 
   // Bereken initiële zoom voor mobile (fit to screen)
   useEffect(() => {
@@ -217,6 +222,23 @@ export default function MobileAppContent({
     saveItems(updatedItems)
   }
 
+  // PDF Export handler
+  const handleExportPdf = async () => {
+    if (!plattegrondStageRef) return
+
+    setIsExporting(true)
+    try {
+      const activeLayout = layouts.find(l => l.id === activeLayoutId)
+      const layoutNaam = activeLayout?.naam ?? 'Plattegrond'
+      await exportStageToPdf(plattegrondStageRef, layoutNaam)
+    } catch (error) {
+      console.error('PDF export fout:', error)
+      alert('Er ging iets mis bij het exporteren. Probeer het opnieuw.')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   return (
     <div className="h-screen flex flex-col overflow-hidden relative">
       {/* Liquid Glass Gradient Background */}
@@ -258,6 +280,7 @@ export default function MobileAppContent({
             onStageMove={setStagePosition}
             lineaalModus={lineaalModus}
             onMeetResultaat={setMeetResultaat}
+            onStageRef={setPlattegrondStageRef}
           />
           </div>
         </div>
@@ -306,6 +329,8 @@ export default function MobileAppContent({
         appVersion={appVersion}
         hasNewVersion={hasNewVersion}
         onOpenChangelog={onOpenChangelog}
+        onExportPdf={handleExportPdf}
+        isExporting={isExporting}
       />
       </div>
     </div>

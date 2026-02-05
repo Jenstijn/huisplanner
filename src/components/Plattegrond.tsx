@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Stage, Layer, Rect, Text, Group, Line, Circle, Arc, Ellipse } from 'react-konva'
 import AirfryerEasterEgg from './AirfryerEasterEgg'
 import {
@@ -29,6 +29,8 @@ interface PlattegrondProps {
   // Lineaal props
   lineaalModus?: boolean
   onMeetResultaat?: (resultaat: { afstand: number; van: {x: number, y: number}; naar: {x: number, y: number} } | null) => void
+  // PDF Export: callback om stage ref door te geven aan parent
+  onStageRef?: (ref: React.RefObject<any>) => void
 }
 
 // Offset om ruimte te maken voor labels en padding
@@ -539,7 +541,8 @@ export default function Plattegrond({
   onZoomChange,
   onStageMove,
   lineaalModus = false,
-  onMeetResultaat
+  onMeetResultaat,
+  onStageRef
 }: PlattegrondProps) {
   const canvasBreedte = 9 * PIXELS_PER_METER + OFFSET_X * 2
   const canvasHoogte = 12.5 * PIXELS_PER_METER + OFFSET_Y * 2
@@ -566,8 +569,15 @@ export default function Plattegrond({
   const lastTouchAngleRef = useRef<number | null>(null)
   const initialItemRotationRef = useRef<number>(0)
 
-  // Stage ref voor touch positie berekening
+  // Stage ref voor touch positie berekening en PDF export
   const stageRef = useRef<any>(null)
+
+  // Geef stageRef door aan parent voor PDF export
+  useEffect(() => {
+    if (onStageRef) {
+      onStageRef(stageRef)
+    }
+  }, [onStageRef])
 
   // Bereken buitengrenzen één keer
   const buitenGrenzen = getBuitenGrenzen(muren)
