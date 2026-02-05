@@ -154,3 +154,21 @@ Dit voorkomt dat er bugs worden opgeleverd die pas later ontdekt worden.
 - Number inputs voor afmetingen: `w-16` (64px) is minimum voor getallen zoals "2.50"
 - Gebruik `text-xs` i.p.v. `text-sm` voor compactere layout
 - `px-1` i.p.v. `px-1.5` voor meer ruimte binnen het veld
+
+### UI Wijzigingen Checklist (ALTIJD Controleren)
+**Na elke UI wijziging: controleer visueel op overflow/afsnijding issues**
+
+1. **Container overflow check:**
+   - Wordt content afgesneden aan de randen?
+   - Toolbars/menubars: gebruik `flex-wrap` en `max-w-full` om afsnijding te voorkomen
+   - Lange lijsten: gebruik `overflow-auto` of `overflow-x-auto` met scroll indicators
+
+2. **Responsieve layouts:**
+   - Test op smalle viewports (sidebar dicht)
+   - Inline-flex containers kunnen té breed worden - overweeg `flex-wrap`
+   - `rounded-full` wordt lelijk bij wrap - gebruik dan `rounded-2xl`
+
+3. **Oplossingspatronen voor overflow:**
+   - Toolbar te breed: `flex-wrap items-center justify-center max-w-full`
+   - Sidebar te hoog: `h-full overflow-auto`
+   - Input velden: vaste `w-XX` + `text-xs` voor compactheid

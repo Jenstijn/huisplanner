@@ -56,8 +56,8 @@ export default function Toolbar({
 
   // Toolbar voor geselecteerd item
   return (
-    <div className="flex justify-center">
-      <div className="inline-flex items-center gap-1 p-1.5 bg-white rounded-full shadow-lg border border-slate-200">
+    <div className="flex justify-center px-2">
+      <div className="inline-flex flex-wrap items-center justify-center gap-1 p-1.5 bg-white rounded-2xl shadow-lg border border-slate-200 max-w-full">
         {/* Roteer linksom knop */}
         <button
           onClick={() => onSetRotatie?.(((huidigeRotatie ?? 0) - 90 + 360) % 360)}
