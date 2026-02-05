@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { User } from 'firebase/auth'
 import Plattegrond from '../Plattegrond'
 import MobileHeader from './MobileHeader'
@@ -9,6 +9,7 @@ import MobileMeubelSelector from './MobileMeubelSelector'
 import { GeplaatstMeubel, Layout } from '../../types'
 import { beschikbareMeubels, PIXELS_PER_METER } from '../../data/appartement'
 import { exportStageToPdf } from '../../utils/exportPdf'
+import { useHistory } from '../../hooks/useHistory'
 
 // Canvas dimensies (moet overeenkomen met Plattegrond.tsx)
 const CANVAS_BREEDTE_M = 9
@@ -76,6 +77,57 @@ export default function MobileAppContent({
   const [plattegrondStageRef, setPlattegrondStageRef] = useState<React.RefObject<any> | null>(null)
   const [isExporting, setIsExporting] = useState(false)
 
+  // Undo/redo history voor lokale bewerkingen
+  const history = useHistory<GeplaatstMeubel[]>(geplaatsteItems)
+
+  // Sync history state met Firebase items wanneer die veranderen (bijv. door andere gebruiker)
+  useEffect(() => {
+    // Reset history wanneer items van buitenaf veranderen (layout switch, sync)
+    history.reset(geplaatsteItems)
+  }, [activeLayoutId]) // Alleen bij layout switch, niet bij elke item change
+
+  // Wrapper voor saveItems die ook history bijwerkt
+  const saveItemsWithHistory = useCallback((items: GeplaatstMeubel[]) => {
+    history.set(items)
+    saveItems(items)
+  }, [history, saveItems])
+
+  // Undo handler
+  const handleUndo = useCallback(() => {
+    const previousState = history.undo()
+    if (previousState !== undefined) {
+      saveItems(previousState)
+    }
+  }, [history, saveItems])
+
+  // Redo handler
+  const handleRedo = useCallback(() => {
+    const nextState = history.redo()
+    if (nextState !== undefined) {
+      saveItems(nextState)
+    }
+  }, [history, saveItems])
+
+  // Duplicate handler
+  const handleDuplicate = useCallback(() => {
+    if (!geselecteerdItemId) return
+
+    const item = geplaatsteItems.find(i => i.id === geselecteerdItemId)
+    if (!item) return
+
+    // Maak een kopie met nieuwe ID en kleine offset
+    const duplicaat: GeplaatstMeubel = {
+      ...item,
+      id: `${item.meubelId}-${Date.now()}`,
+      x: item.x + 0.3, // 30cm offset
+      y: item.y + 0.3
+    }
+
+    const newItems = [...geplaatsteItems, duplicaat]
+    saveItemsWithHistory(newItems)
+    setGeselecteerdItemId(duplicaat.id) // Selecteer het nieuwe item
+  }, [geselecteerdItemId, geplaatsteItems, saveItemsWithHistory])
+
   // Bereken initiële zoom voor mobile (fit to screen)
   useEffect(() => {
     if (zoomInitialized) return
@@ -131,7 +183,7 @@ export default function MobileAppContent({
           })
         }
 
-        saveItems([...geplaatsteItems, nieuwItem])
+        saveItemsWithHistory([...geplaatsteItems, nieuwItem])
         // Op mobile: deselecteer na plaatsen (gebruiker kan nieuw meubel kiezen)
         setTePlaatsenMeubelId(null)
         setCustomAfmetingen(null)
@@ -154,7 +206,7 @@ export default function MobileAppContent({
     const updatedItems = geplaatsteItems.map(item =>
       item.id === id ? { ...item, x, y } : item
     )
-    saveItems(updatedItems)
+    saveItemsWithHistory(updatedItems)
   }
 
   const handleRoteren = () => {
@@ -164,20 +216,20 @@ export default function MobileAppContent({
           ? { ...item, rotatie: (item.rotatie + 90) % 360 }
           : item
       )
-      saveItems(updatedItems)
+      saveItemsWithHistory(updatedItems)
     }
   }
 
   const handleVerwijderen = () => {
     if (geselecteerdItemId) {
       const updatedItems = geplaatsteItems.filter(item => item.id !== geselecteerdItemId)
-      saveItems(updatedItems)
+      saveItemsWithHistory(updatedItems)
       setGeselecteerdItemId(null)
     }
   }
 
   const handleAllesWissen = () => {
-    saveItems([])
+    saveItemsWithHistory([])
     setGeselecteerdItemId(null)
     setTePlaatsenMeubelId(null)
   }
@@ -219,7 +271,7 @@ export default function MobileAppContent({
         ? { ...item, customBreedte: clampedBreedte, customHoogte: clampedHoogte }
         : item
     )
-    saveItems(updatedItems)
+    saveItemsWithHistory(updatedItems)
   }
 
   // PDF Export handler
@@ -296,6 +348,11 @@ export default function MobileAppContent({
         onLineaalToggle={handleLineaalToggle}
         lineaalModus={lineaalModus}
         meetResultaat={meetResultaat}
+        canUndo={history.canUndo}
+        canRedo={history.canRedo}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        onDuplicate={geselecteerdItemId ? handleDuplicate : undefined}
       />
 
       {/* Meubel Selection Bottom Sheet */}

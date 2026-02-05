@@ -1,5 +1,6 @@
 import { beschikbareMeubels } from '../data/appartement'
 import { GeplaatstMeubel } from '../types'
+import { formatShortcut } from '../hooks/useKeyboardShortcuts'
 
 interface ToolbarProps {
   geselecteerdItemId: string | null
@@ -11,6 +12,12 @@ interface ToolbarProps {
   tePlaatsenMeubelId?: string | null
   geselecteerdItem?: GeplaatstMeubel
   onResize?: (id: string, breedte: number, hoogte: number) => void
+  // Undo/Redo props
+  canUndo?: boolean
+  canRedo?: boolean
+  onUndo?: () => void
+  onRedo?: () => void
+  onDuplicate?: () => void
 }
 
 export default function Toolbar({
@@ -21,7 +28,12 @@ export default function Toolbar({
   huidigeRotatie,
   tePlaatsenMeubelId,
   geselecteerdItem,
-  onResize
+  onResize,
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
+  onDuplicate
 }: ToolbarProps) {
   // Zoek meubel info voor geselecteerd item
   const geselecteerdMeubel = geselecteerdItem
@@ -31,9 +43,50 @@ export default function Toolbar({
   // Huidige afmetingen (custom of standaard)
   const huidigeBreedte = geselecteerdItem?.customBreedte ?? geselecteerdMeubel?.breedte ?? 1
   const huidigeHoogte = geselecteerdItem?.customHoogte ?? geselecteerdMeubel?.hoogte ?? 1
-  // Toon toolbar alleen als er een item geselecteerd is
+  // Toon altijd de global actions (undo/redo), zelfs als er geen selectie is
+  const showGlobalActions = onUndo || onRedo
+
+  // Als geen selectie en geen plaatsing, toon alleen global actions
   if (!geselecteerdItemId && !tePlaatsenMeubelId) {
-    return null
+    if (!showGlobalActions) return null
+
+    return (
+      <div className="flex justify-center px-2">
+        <div className="inline-flex items-center gap-1 p-1.5 bg-white rounded-2xl shadow-lg border border-slate-200">
+          {/* Undo knop */}
+          <button
+            onClick={onUndo}
+            disabled={!canUndo}
+            className={`group flex items-center gap-1.5 px-3 py-2 rounded-full transition-all ${
+              canUndo
+                ? 'hover:bg-slate-100 text-slate-600'
+                : 'text-slate-300 cursor-not-allowed'
+            }`}
+            title={`Ongedaan maken (${formatShortcut('Mod+Z')})`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+            </svg>
+          </button>
+
+          {/* Redo knop */}
+          <button
+            onClick={onRedo}
+            disabled={!canRedo}
+            className={`group flex items-center gap-1.5 px-3 py-2 rounded-full transition-all ${
+              canRedo
+                ? 'hover:bg-slate-100 text-slate-600'
+                : 'text-slate-300 cursor-not-allowed'
+            }`}
+            title={`Opnieuw doen (${formatShortcut('Mod+Shift+Z')})`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10H11a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    )
   }
 
   // Als er een meubel klaar staat om te plaatsen
@@ -58,6 +111,43 @@ export default function Toolbar({
   return (
     <div className="flex justify-center px-2">
       <div className="inline-flex flex-wrap items-center justify-center gap-1 p-1.5 bg-white rounded-2xl shadow-lg border border-slate-200 max-w-full">
+        {/* Undo/Redo knoppen */}
+        {showGlobalActions && (
+          <>
+            <button
+              onClick={onUndo}
+              disabled={!canUndo}
+              className={`group flex items-center gap-1 px-2 py-2 rounded-full transition-all ${
+                canUndo
+                  ? 'bg-slate-50 hover:bg-slate-100 text-slate-600'
+                  : 'text-slate-300 cursor-not-allowed'
+              }`}
+              title={`Ongedaan maken (${formatShortcut('Mod+Z')})`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+              </svg>
+            </button>
+
+            <button
+              onClick={onRedo}
+              disabled={!canRedo}
+              className={`group flex items-center gap-1 px-2 py-2 rounded-full transition-all ${
+                canRedo
+                  ? 'bg-slate-50 hover:bg-slate-100 text-slate-600'
+                  : 'text-slate-300 cursor-not-allowed'
+              }`}
+              title={`Opnieuw doen (${formatShortcut('Mod+Shift+Z')})`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10H11a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6" />
+              </svg>
+            </button>
+
+            <span className="w-px h-6 bg-slate-200 mx-1"></span>
+          </>
+        )}
+
         {/* Roteer linksom knop */}
         <button
           onClick={() => onSetRotatie?.(((huidigeRotatie ?? 0) - 90 + 360) % 360)}
@@ -198,11 +288,25 @@ export default function Toolbar({
           </div>
         )}
 
+        {/* Duplicate knop */}
+        {onDuplicate && (
+          <button
+            onClick={onDuplicate}
+            className="group flex items-center gap-2 px-3 py-2 bg-slate-50 hover:bg-blue-50 rounded-full transition-all"
+            title={`Dupliceren (${formatShortcut('Mod+D')})`}
+          >
+            <svg className="w-4 h-4 text-slate-500 group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            <span className="text-sm font-medium text-slate-600 group-hover:text-blue-600 transition-colors">Dupliceer</span>
+          </button>
+        )}
+
         {/* Verwijder knop */}
         <button
           onClick={onVerwijderen}
-          className="group flex items-center gap-2 px-4 py-2 hover:bg-red-50 rounded-full transition-all"
-          title="Verwijderen"
+          className="group flex items-center gap-2 px-3 py-2 hover:bg-red-50 rounded-full transition-all"
+          title={`Verwijderen (${formatShortcut('Delete')})`}
         >
           <svg className="w-4 h-4 text-slate-500 group-hover:text-red-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

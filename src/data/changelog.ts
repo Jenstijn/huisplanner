@@ -17,6 +17,17 @@ export interface Release {
 
 export const changelog: Release[] = [
   {
+    version: '1.8.0',
+    date: '2026-02-05',
+    title: 'Undo/Redo & Shortcuts',
+    entries: [
+      { type: 'feature', description: 'Undo/Redo: maak acties ongedaan of doe ze opnieuw' },
+      { type: 'feature', description: 'Dupliceer meubels met één klik of ⌘D / Ctrl+D' },
+      { type: 'feature', description: 'Keyboard shortcuts: ⌘Z (undo), ⌘⇧Z (redo), R (roteer), Delete (verwijder), Escape (deselecteer)' },
+      { type: 'improvement', description: 'Undo/Redo werkt voor alle bewerkingen: plaatsen, verplaatsen, roteren, verwijderen' },
+    ]
+  },
+  {
     version: '1.7.0',
     date: '2026-02-05',
     title: 'PDF Export',

@@ -20,6 +20,13 @@ interface MobileToolbarProps {
   lineaalModus: boolean
   /** Meetresultaat indien beschikbaar */
   meetResultaat?: { afstand: number } | null
+  /** Undo/Redo props */
+  canUndo?: boolean
+  canRedo?: boolean
+  onUndo?: () => void
+  onRedo?: () => void
+  /** Duplicate prop */
+  onDuplicate?: () => void
 }
 
 /**
@@ -35,7 +42,12 @@ export default function MobileToolbar({
   onVerwijderen,
   onLineaalToggle,
   lineaalModus,
-  meetResultaat
+  meetResultaat,
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
+  onDuplicate
 }: MobileToolbarProps) {
   // Info over geselecteerd meubel uit lijst
   const tePlaatsenMeubel = tePlaatsenMeubelId
@@ -60,6 +72,42 @@ export default function MobileToolbar({
             <span className="text-slate-500 text-sm">
               ({(meetResultaat.afstand * 100).toFixed(0)} cm)
             </span>
+          </div>
+        </div>
+      )}
+
+      {/* Undo/Redo balk */}
+      {(onUndo || onRedo) && (
+        <div className="flex justify-center mb-3 animate-float-up">
+          <div className="glass-pill px-2 py-1 flex items-center gap-1">
+            <button
+              onClick={onUndo}
+              disabled={!canUndo}
+              className={`p-2 rounded-full transition-all active:scale-90 ${
+                canUndo
+                  ? 'text-slate-600 hover:bg-slate-200/50'
+                  : 'text-slate-300'
+              }`}
+              title="Ongedaan maken"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+              </svg>
+            </button>
+            <button
+              onClick={onRedo}
+              disabled={!canRedo}
+              className={`p-2 rounded-full transition-all active:scale-90 ${
+                canRedo
+                  ? 'text-slate-600 hover:bg-slate-200/50'
+                  : 'text-slate-300'
+              }`}
+              title="Opnieuw doen"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10H11a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6" />
+              </svg>
+            </button>
           </div>
         </div>
       )}
@@ -92,12 +140,12 @@ export default function MobileToolbar({
             onClick={onMeubelSheetOpen}
             className="flex flex-col items-center gap-1.5 p-1"
           >
-            <div className={`w-14 h-14 flex items-center justify-center transition-all active:scale-90 ${
+            <div className={`w-12 h-12 flex items-center justify-center transition-all active:scale-90 ${
               tePlaatsenMeubelId
                 ? 'glass-fab-primary'
                 : 'glass-fab'
             }`}>
-              <svg className={`w-6 h-6 ${tePlaatsenMeubelId ? 'text-white' : 'text-slate-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`w-5 h-5 ${tePlaatsenMeubelId ? 'text-white' : 'text-slate-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
             </div>
@@ -112,12 +160,12 @@ export default function MobileToolbar({
             disabled={!geselecteerdItemId}
             className="flex flex-col items-center gap-1.5 p-1"
           >
-            <div className={`w-14 h-14 flex items-center justify-center transition-all ${
+            <div className={`w-12 h-12 flex items-center justify-center transition-all ${
               geselecteerdItemId
                 ? 'glass-fab active:scale-90'
                 : 'glass-fab opacity-40'
             }`}>
-              <svg className={`w-6 h-6 ${geselecteerdItemId ? 'text-slate-600' : 'text-slate-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`w-5 h-5 ${geselecteerdItemId ? 'text-slate-600' : 'text-slate-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </div>
@@ -126,17 +174,37 @@ export default function MobileToolbar({
             </span>
           </button>
 
+          {/* Dupliceren (alleen als item geselecteerd) */}
+          <button
+            onClick={onDuplicate}
+            disabled={!geselecteerdItemId || !onDuplicate}
+            className="flex flex-col items-center gap-1.5 p-1"
+          >
+            <div className={`w-12 h-12 flex items-center justify-center transition-all ${
+              geselecteerdItemId && onDuplicate
+                ? 'glass-fab active:scale-90'
+                : 'glass-fab opacity-40'
+            }`}>
+              <svg className={`w-5 h-5 ${geselecteerdItemId && onDuplicate ? 'text-blue-500' : 'text-slate-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <span className={`text-xs font-medium ${geselecteerdItemId && onDuplicate ? 'text-blue-500' : 'text-slate-400'}`}>
+              Kopieer
+            </span>
+          </button>
+
           {/* Meten */}
           <button
             onClick={onLineaalToggle}
             className="flex flex-col items-center gap-1.5 p-1"
           >
-            <div className={`w-14 h-14 flex items-center justify-center transition-all active:scale-90 ${
+            <div className={`w-12 h-12 flex items-center justify-center transition-all active:scale-90 ${
               lineaalModus
                 ? 'glass-fab-primary !bg-gradient-to-br !from-orange-400 !to-amber-500'
                 : 'glass-fab'
             }`}>
-              <svg className={`w-6 h-6 ${lineaalModus ? 'text-white' : 'text-slate-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`w-5 h-5 ${lineaalModus ? 'text-white' : 'text-slate-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
               </svg>
             </div>
@@ -151,12 +219,12 @@ export default function MobileToolbar({
             disabled={!geselecteerdItemId}
             className="flex flex-col items-center gap-1.5 p-1"
           >
-            <div className={`w-14 h-14 flex items-center justify-center transition-all ${
+            <div className={`w-12 h-12 flex items-center justify-center transition-all ${
               geselecteerdItemId
                 ? 'glass-fab active:scale-90 hover:bg-red-500/10'
                 : 'glass-fab opacity-40'
             }`}>
-              <svg className={`w-6 h-6 ${geselecteerdItemId ? 'text-red-500' : 'text-slate-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`w-5 h-5 ${geselecteerdItemId ? 'text-red-500' : 'text-slate-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
             </div>

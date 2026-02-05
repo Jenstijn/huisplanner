@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Plattegrond from './components/Plattegrond'
 import MeubelLijst from './components/MeubelLijst'
 import Toolbar from './components/Toolbar'
@@ -17,9 +17,11 @@ import { useChangelog } from './hooks/useChangelog'
 import { GeplaatstMeubel, Layout } from './types'
 import { beschikbareMeubels, PIXELS_PER_METER } from './data/appartement'
 import { exportStageToPdf } from './utils/exportPdf'
+import { useHistory } from './hooks/useHistory'
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 
 // App versie - update bij elke release
-const APP_VERSION = '1.7.0'
+const APP_VERSION = '1.8.0'
 
 // Canvas dimensies (moet overeenkomen met Plattegrond.tsx)
 const CANVAS_BREEDTE_M = 9
@@ -276,6 +278,93 @@ function DesktopAppContent({
   const [plattegrondStageRef, setPlattegrondStageRef] = useState<React.RefObject<any> | null>(null)
   const [isExporting, setIsExporting] = useState(false)
 
+  // Undo/redo history voor lokale bewerkingen
+  const history = useHistory<GeplaatstMeubel[]>(geplaatsteItems)
+
+  // Sync history state met Firebase items wanneer die veranderen (bijv. door andere gebruiker)
+  useEffect(() => {
+    // Reset history wanneer items van buitenaf veranderen (layout switch, sync)
+    history.reset(geplaatsteItems)
+  }, [activeLayoutId]) // Alleen bij layout switch, niet bij elke item change
+
+  // Wrapper voor saveItems die ook history bijwerkt
+  const saveItemsWithHistory = useCallback((items: GeplaatstMeubel[]) => {
+    history.set(items)
+    saveItems(items)
+  }, [history, saveItems])
+
+  // Undo handler
+  const handleUndo = useCallback(() => {
+    const previousState = history.undo()
+    if (previousState !== undefined) {
+      saveItems(previousState)
+    }
+  }, [history, saveItems])
+
+  // Redo handler
+  const handleRedo = useCallback(() => {
+    const nextState = history.redo()
+    if (nextState !== undefined) {
+      saveItems(nextState)
+    }
+  }, [history, saveItems])
+
+  // Duplicate handler
+  const handleDuplicate = useCallback(() => {
+    if (!geselecteerdItemId) return
+
+    const item = geplaatsteItems.find(i => i.id === geselecteerdItemId)
+    if (!item) return
+
+    // Maak een kopie met nieuwe ID en kleine offset
+    const duplicaat: GeplaatstMeubel = {
+      ...item,
+      id: `${item.meubelId}-${Date.now()}`,
+      x: item.x + 0.3, // 30cm offset
+      y: item.y + 0.3
+    }
+
+    const newItems = [...geplaatsteItems, duplicaat]
+    saveItemsWithHistory(newItems)
+    setGeselecteerdItemId(duplicaat.id) // Selecteer het nieuwe item
+  }, [geselecteerdItemId, geplaatsteItems, saveItemsWithHistory])
+
+  // Escape handler - deselecteer alles
+  const handleEscape = useCallback(() => {
+    setGeselecteerdItemId(null)
+    setTePlaatsenMeubelId(null)
+    setCustomAfmetingen(null)
+    if (lineaalModus) {
+      setLineaalModus(false)
+      setMeetResultaat(null)
+    }
+  }, [lineaalModus])
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    onUndo: handleUndo,
+    onRedo: handleRedo,
+    onDelete: () => {
+      if (geselecteerdItemId) {
+        const updatedItems = geplaatsteItems.filter(item => item.id !== geselecteerdItemId)
+        saveItemsWithHistory(updatedItems)
+        setGeselecteerdItemId(null)
+      }
+    },
+    onRotate: () => {
+      if (geselecteerdItemId) {
+        const updatedItems = geplaatsteItems.map(item =>
+          item.id === geselecteerdItemId
+            ? { ...item, rotatie: (item.rotatie + 90) % 360 }
+            : item
+        )
+        saveItemsWithHistory(updatedItems)
+      }
+    },
+    onEscape: handleEscape,
+    onDuplicate: handleDuplicate
+  })
+
   // Bereken initiële zoom zodat hele plattegrond past
   useEffect(() => {
     if (zoomInitialized) return // Al geïnitialiseerd
@@ -379,8 +468,8 @@ function DesktopAppContent({
             customHoogte: customAfmetingen.hoogte
           })
         }
-        // Sla op naar Firebase
-        saveItems([...geplaatsteItems, nieuwItem])
+        // Sla op naar Firebase met history
+        saveItemsWithHistory([...geplaatsteItems, nieuwItem])
         // Reset plaatsingsmodus na plaatsing
         setTePlaatsenMeubelId(null)
         setCustomAfmetingen(null)
@@ -403,14 +492,14 @@ function DesktopAppContent({
     const updatedItems = geplaatsteItems.map(item =>
       item.id === id ? { ...item, x, y } : item
     )
-    saveItems(updatedItems)
+    saveItemsWithHistory(updatedItems)
   }
 
   // Item verwijderen
   const handleVerwijderen = () => {
     if (geselecteerdItemId) {
       const updatedItems = geplaatsteItems.filter(item => item.id !== geselecteerdItemId)
-      saveItems(updatedItems)
+      saveItemsWithHistory(updatedItems)
       setGeselecteerdItemId(null)
     }
   }
@@ -423,7 +512,7 @@ function DesktopAppContent({
           ? { ...item, rotatie: (item.rotatie + 90) % 360 }
           : item
       )
-      saveItems(updatedItems)
+      saveItemsWithHistory(updatedItems)
     }
   }
 
@@ -435,7 +524,7 @@ function DesktopAppContent({
           ? { ...item, rotatie: graden % 360 }
           : item
       )
-      saveItems(updatedItems)
+      saveItemsWithHistory(updatedItems)
     }
   }
 
@@ -462,12 +551,12 @@ function DesktopAppContent({
         ? { ...item, customBreedte: clampedBreedte, customHoogte: clampedHoogte }
         : item
     )
-    saveItems(updatedItems)
+    saveItemsWithHistory(updatedItems)
   }
 
   // Alles wissen
   const handleAllesWissen = () => {
-    saveItems([])
+    saveItemsWithHistory([])
     setGeselecteerdItemId(null)
     setTePlaatsenMeubelId(null)
     setCustomAfmetingen(null)
@@ -491,8 +580,8 @@ function DesktopAppContent({
           customHoogte
         })
       }
-      // Sla op naar Firebase
-      saveItems([...geplaatsteItems, nieuwItem])
+      // Sla op naar Firebase met history
+      saveItemsWithHistory([...geplaatsteItems, nieuwItem])
       // Reset selectie na drop
       setTePlaatsenMeubelId(null)
       setCustomAfmetingen(null)
@@ -674,6 +763,11 @@ function DesktopAppContent({
               tePlaatsenMeubelId={tePlaatsenMeubelId}
               geselecteerdItem={geplaatsteItems.find(i => i.id === geselecteerdItemId)}
               onResize={handleResize}
+              canUndo={history.canUndo}
+              canRedo={history.canRedo}
+              onUndo={handleUndo}
+              onRedo={handleRedo}
+              onDuplicate={geselecteerdItemId ? handleDuplicate : undefined}
             />
 
               {/* Plattegrond Canvas */}
