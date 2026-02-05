@@ -376,3 +376,27 @@ Dit voorkomt dat er bugs worden opgeleverd die pas later ontdekt worden.
 - **CORRECT:** Bij toevoegen van buttons aan een sectie zonder `space-y-X` wrapper, altijd expliciet margin toevoegen (`mt-1` of `mt-2`)
 - **PATROON:** Check altijd of de parent container automatische spacing heeft (zoals `space-y-1`). Zo niet, voeg zelf margin toe.
 - **TIP:** Na het toevoegen van UI elementen aan bestaande lijsten/secties: maak een screenshot en controleer visueel op spacing issues
+
+### Mobile Modal/Popup Layout (Fout Geleerd)
+- **FOUT:** Modal content in `flex-col` zonder voldoende `gap` en elementen in een enkele `justify-between` div gepropt
+- **PROBLEEM:** Elementen (input, karakterteller, buttons) werden samengedrukt of verdwenen achter andere elementen
+- **CORRECT:**
+  1. Gebruik voldoende `gap-4` op de parent container
+  2. Wrap gerelateerde elementen (input + karakterteller) in een eigen `<div>`
+  3. Geef elk element ruimte: `py-3` op inputs, `mt-2` op helper tekst
+  4. Buttons in eigen div met `justify-end` en `gap-3`
+- **PATROON:** Bij modals/popups altijd deze structuur:
+  ```jsx
+  <div className="flex flex-col gap-4">
+    <div className="title">Titel</div>
+    <div>
+      <input className="py-3" />
+      <div className="mt-2">Helper tekst</div>
+    </div>
+    <div className="flex justify-end gap-3">
+      <button>Annuleer</button>
+      <button>Opslaan</button>
+    </div>
+  </div>
+  ```
+- **TIP:** Test modals ALTIJD op mobile met keyboard open - elementen moeten zichtbaar blijven
