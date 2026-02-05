@@ -447,3 +447,30 @@ Dit voorkomt dat er bugs worden opgeleverd die pas later ontdekt worden.
   }
   ```
 - **PATROON:** Bij optionele velden die "leeg" kunnen worden: altijd `delete` gebruiken
+
+### API Keys & Secrets Beveiliging (KRITIEK!)
+**NOOIT credentials committen naar Git - dit is een ernstig beveiligingsrisico!**
+
+1. **Bestanden die NOOIT in Git mogen**:
+   - `.env` / `.env.local` / `.env.production` / `.env.vercel`
+   - Elk bestand met API keys, tokens, of wachtwoorden
+   - Firebase config bestanden met echte credentials
+   - Service account JSON bestanden
+
+2. **Controleer ALTIJD voor elke commit**:
+   - Run `git status` en check of er geen `.env*` bestanden staged zijn
+   - Als je per ongeluk credentials commit: **ROTEER DE KEY DIRECT**
+   - Alleen uit Git verwijderen is NIET genoeg - de key staat in de history
+
+3. **Bij een gelekte key**:
+   - Verwijder bestand uit Git tracking: `git rm --cached <bestand>`
+   - Voeg toe aan `.gitignore`
+   - Verwijder uit HELE Git history: `git filter-branch --force --index-filter 'git rm --cached --ignore-unmatch <bestand>' --prune-empty --tag-name-filter cat -- --all`
+   - Force push: `git push origin --force --all`
+   - **ROTEER DE KEY** in Google Cloud Console / Firebase Console
+   - Update de nieuwe key in `.env.local` (lokaal) en Vercel/hosting (productie)
+
+4. **Preventie**:
+   - Check `.gitignore` bevat: `.env`, `.env.local`, `.env.*.local`, `.env.vercel`
+   - Maak NOOIT bestanden aan met "credentials", "secrets", of "keys" in de naam
+   - Environment variables horen in hosting dashboard (Vercel), NIET in Git
