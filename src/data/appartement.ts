@@ -613,26 +613,6 @@ export const muren: Muur[] = [
     openings: []
   },
 
-  // Muur badkamer-doucheruimte (met deur)
-  {
-    id: 'binnenmuur-badkamer-douche',
-    start: transformCoord(611.85, 697.18),
-    eind: transformCoord(611.85, 632.18),
-    dikte: 10,
-    openings: [
-      { type: 'deur', t: 0.5096, breedte: 0.50, swing: 'links' }
-    ]
-  },
-
-  // Muur badkamer-douche horizontaal
-  {
-    id: 'binnenmuur-badkamer-douche-h',
-    start: transformCoord(611.85, 632.18),
-    eind: transformCoord(671.85, 632.18),
-    dikte: 10,
-    openings: []
-  },
-
   // Muur badkamer-toilet horizontaal
   {
     id: 'binnenmuur-badkamer-toilet',

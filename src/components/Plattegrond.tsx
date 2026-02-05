@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Stage, Layer, Rect, Text, Group, Line, Circle, Arc, Ellipse } from 'react-konva'
+import AirfryerEasterEgg from './AirfryerEasterEgg'
 import {
   appartementKamers,
   PIXELS_PER_METER,
@@ -974,6 +975,16 @@ export default function Plattegrond({
             )}
           </Group>
         ))}
+
+        {/* Easter Egg: Airfryer op het keuken aanrecht */}
+        {/* Aanrecht: x=3.50m (center), y van ~2.75m tot ~5.38m, breedte=0.65m */}
+        {/* Airfryer gedraaid 90° zodat frikadel naar links (de woonkamer in) vliegt */}
+        <AirfryerEasterEgg
+          x={3.30 * PIXELS_PER_METER + OFFSET_X}  // Op het aanrecht
+          y={5.0 * PIXELS_PER_METER + OFFSET_Y}   // Op het werkblad, onder de oven/spoelbak
+          pixelsPerMeter={PIXELS_PER_METER}
+          rotatie={-90}  // 90° naar links gedraaid
+        />
 
         {/* Geplaatste meubels tekenen met visuele stijl */}
         {geplaatsteItems.map((item) => {

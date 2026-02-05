@@ -5,6 +5,7 @@ import Toolbar from './components/Toolbar'
 import ZoomControls from './components/ZoomControls'
 import EigenschappenPaneel from './components/EigenschappenPaneel'
 import LoginScherm from './components/LoginScherm'
+import LayoutSelector from './components/LayoutSelector'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { usePlattegrond } from './hooks/usePlattegrond'
 import { GeplaatstMeubel } from './types'
@@ -20,7 +21,20 @@ const CANVAS_HOOGTE_PX = CANVAS_HOOGTE_M * PIXELS_PER_METER + OFFSET * 2
 // Hoofd app content (na login)
 function AppContent() {
   const { user, logout } = useAuth()
-  const { items: geplaatsteItems, loading: dataLoading, error: dataError, saveItems } = usePlattegrond()
+  const {
+    items: geplaatsteItems,
+    loading: dataLoading,
+    error: dataError,
+    saveItems,
+    // Layout functies
+    layouts,
+    activeLayoutId,
+    switchLayout,
+    createLayout,
+    renameLayout,
+    duplicateLayout,
+    deleteLayout
+  } = usePlattegrond()
 
   // Ref voor de canvas container om beschikbare ruimte te meten
   const canvasContainerRef = useRef<HTMLDivElement>(null)
@@ -34,8 +48,9 @@ function AppContent() {
   // State voor geselecteerd item op de plattegrond (om te bewerken)
   const [geselecteerdItemId, setGeselecteerdItemId] = useState<string | null>(null)
 
-  // State voor zoom en pan - start met null zodat we weten dat initiële zoom nog berekend moet worden
-  const [zoom, setZoom] = useState<number | null>(null)
+  // State voor zoom en pan - start met 0.6 als veilige default
+  const [zoom, setZoom] = useState<number>(0.6)
+  const [zoomInitialized, setZoomInitialized] = useState(false)
   const [stagePosition, setStagePosition] = useState({ x: 0, y: 0 })
 
   // State voor lineaal/meet modus
@@ -44,14 +59,17 @@ function AppContent() {
 
   // Bereken initiële zoom zodat hele plattegrond past
   useEffect(() => {
-    if (zoom !== null) return // Al geïnitialiseerd
+    if (zoomInitialized) return // Al geïnitialiseerd
 
     const calculateInitialZoom = () => {
-      if (!canvasContainerRef.current) return
+      if (!canvasContainerRef.current) return false
 
       const container = canvasContainerRef.current
       const availableWidth = container.clientWidth - 32 // padding
       const availableHeight = container.clientHeight - 32
+
+      // Als container nog geen grootte heeft, probeer later opnieuw
+      if (availableWidth <= 0 || availableHeight <= 0) return false
 
       // Bereken zoom zodat canvas past in beschikbare ruimte
       const zoomX = availableWidth / CANVAS_BREEDTE_PX
@@ -64,11 +82,27 @@ function AppContent() {
       const initialZoom = Math.max(0.3, Math.min(1, fitZoom))
 
       setZoom(initialZoom)
+      setZoomInitialized(true)
+      return true
     }
 
-    // Wacht even tot layout is gerenderd
-    requestAnimationFrame(calculateInitialZoom)
-  }, [zoom])
+    // Probeer direct
+    if (calculateInitialZoom()) return
+
+    // Als dat niet lukt, probeer na requestAnimationFrame
+    const frame1 = requestAnimationFrame(() => {
+      if (calculateInitialZoom()) return
+
+      // En nog een keer na een korte delay voor extra zekerheid
+      const timeout = setTimeout(() => {
+        calculateInitialZoom()
+      }, 100)
+
+      return () => clearTimeout(timeout)
+    })
+
+    return () => cancelAnimationFrame(frame1)
+  }, [zoomInitialized])
 
   // Lineaal toggle handler
   const handleLineaalToggle = () => {
@@ -84,8 +118,8 @@ function AppContent() {
   }
 
   // Zoom handlers
-  const handleZoomIn = () => setZoom(z => Math.min((z ?? 1) * 1.2, 3))
-  const handleZoomOut = () => setZoom(z => Math.max((z ?? 1) / 1.2, 0.3))
+  const handleZoomIn = () => setZoom(z => Math.min(z * 1.2, 3))
+  const handleZoomOut = () => setZoom(z => Math.max(z / 1.2, 0.3))
   const handleZoomReset = () => {
     // Reset naar fit-to-view zoom
     if (canvasContainerRef.current) {
@@ -305,6 +339,17 @@ function AppContent() {
               <span>Gesynchroniseerd</span>
             </div>
 
+            {/* Layout Selector */}
+            <LayoutSelector
+              layouts={layouts}
+              activeLayoutId={activeLayoutId}
+              onSwitch={switchLayout}
+              onCreate={createLayout}
+              onRename={renameLayout}
+              onDuplicate={duplicateLayout}
+              onDelete={deleteLayout}
+            />
+
             <div className="text-sm text-slate-500">
               <span className="font-medium text-slate-700">{geplaatsteItems.length}</span> meubels geplaatst
             </div>
@@ -380,7 +425,6 @@ function AppContent() {
                 ref={canvasContainerRef}
                 className="flex-1 overflow-auto bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-200/50 p-4"
               >
-              {zoom !== null && (
               <Plattegrond
                 geplaatsteItems={geplaatsteItems}
                 geselecteerdItem={geselecteerdItemId}
@@ -396,7 +440,6 @@ function AppContent() {
                 lineaalModus={lineaalModus}
                 onMeetResultaat={setMeetResultaat}
               />
-              )}
               </div>
 
               {/* Instructie hint */}
@@ -431,7 +474,7 @@ function AppContent() {
               }
               geplaatsteItems={geplaatsteItems}
               beschikbareMeubels={beschikbareMeubels}
-              zoom={zoom ?? 1}
+              zoom={zoom}
             />
             </aside>
           </div>
@@ -440,7 +483,7 @@ function AppContent() {
 
       {/* Zoom Controls */}
       <ZoomControls
-        zoom={zoom ?? 1}
+        zoom={zoom}
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
         onZoomReset={handleZoomReset}

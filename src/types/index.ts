@@ -115,3 +115,18 @@ export interface PlannerState {
   meubels: GeplaatstMeubel[]
   geselecteerdMeubel: string | null
 }
+
+// Een layout (indeling) met meubels
+export interface Layout {
+  id: string
+  naam: string
+  items: GeplaatstMeubel[]
+  createdAt?: Date
+  updatedAt?: Date
+}
+
+// De structuur van plattegrond data in Firestore
+export interface PlattegrondData {
+  layouts: Record<string, Layout>
+  activeLayoutId: string
+}

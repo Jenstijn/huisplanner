@@ -14,22 +14,33 @@ Dit project is een interactieve webapp voor huisinrichting. Gebruikers kunnen:
 
 - **Frontend**: React met TypeScript
 - **Styling**: Tailwind CSS
-- **State Management**: React Context of Zustand
-- **Canvas/Visualisatie**: HTML5 Canvas of een library zoals Konva.js
+- **State Management**: React Context
+- **Canvas/Visualisatie**: React-Konva
 - **Build Tool**: Vite
+- **Backend/Database**: Firebase (Firestore + Authentication)
+- **Hosting**: Vercel (automatische deploys vanuit GitHub)
+
+## Live Deployment
+
+- **URL**: https://huisplanner.vercel.app
+- **Auto-deploy**: Push naar `main` branch → Vercel bouwt en deployt automatisch
+- **Firebase Project**: huisplanner-21925
 
 ## Projectstructuur
 
 ```
 huisplanner/
 ├── src/
-│   ├── components/     # React componenten
-│   ├── hooks/          # Custom React hooks
-│   ├── utils/          # Hulpfuncties
+│   ├── components/     # React componenten (Plattegrond, MeubelLijst, LoginScherm, etc.)
+│   ├── contexts/       # React Context providers (AuthContext)
+│   ├── firebase/       # Firebase configuratie
+│   ├── hooks/          # Custom React hooks (usePlattegrond voor Firestore sync)
+│   ├── utils/          # Hulpfuncties (snapLogic)
 │   ├── types/          # TypeScript types
-│   ├── assets/         # Afbeeldingen, iconen
-│   └── App.tsx         # Hoofdcomponent
+│   ├── data/           # Statische data (appartement layout, meubels)
+│   └── App.tsx         # Hoofdcomponent met auth flow
 ├── public/             # Statische bestanden
+├── .env.local          # Firebase credentials (NIET in Git!)
 ├── package.json
 └── README.md
 ```
@@ -154,6 +165,21 @@ Dit voorkomt dat er bugs worden opgeleverd die pas later ontdekt worden.
 - Number inputs voor afmetingen: `w-16` (64px) is minimum voor getallen zoals "2.50"
 - Gebruik `text-xs` i.p.v. `text-sm` voor compactere layout
 - `px-1` i.p.v. `px-1.5` voor meer ruimte binnen het veld
+
+### Firebase & Firestore Integratie
+- **AuthContext** (`src/contexts/AuthContext.tsx`): Beheert login state met Google OAuth
+- **usePlattegrond hook** (`src/hooks/usePlattegrond.ts`): Real-time sync van geplaatste meubels
+- **onSnapshot**: Luistert naar Firestore wijzigingen, update lokale state automatisch
+- **saveItems**: Slaat wijzigingen op naar Firestore, andere gebruikers zien het direct
+- **Document structuur**: `plattegronden/{id}` met `items: GeplaatstMeubel[]` en `updatedAt: timestamp`
+- Environment variables beginnen met `VITE_` voor Vite toegang in browser
+
+### Deployment Workflow
+- **Lokaal testen**: Maak wijzigingen, test met `npm run dev`
+- **Pas pushen na goedkeuring**: Niet automatisch pushen na elke wijziging
+- **Handmatige push**: Alleen na expliciete goedkeuring van gebruiker
+- **Vercel auto-deploy**: Na push naar GitHub bouwt Vercel automatisch
+- **Environment variables**: Staan in Vercel dashboard, NIET in Git
 
 ### UI Wijzigingen Checklist (ALTIJD Controleren)
 **Na elke UI wijziging: controleer visueel op overflow/afsnijding issues**
