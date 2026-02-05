@@ -65,17 +65,19 @@ export default function MobileToolbar({
   onRedo,
   onDuplicate,
   onKleurChange,
-  onNotitieChange: _onNotitieChange // Beschikbaar voor toekomstige notitie UI
+  onNotitieChange
 }: MobileToolbarProps) {
-  // Voorlopig geen notitie UI op mobile, maar prop wel beschikbaar
-  void _onNotitieChange
-  // State voor uitklapmenu
+  // State voor uitklapmenu's
   const [showKleurPicker, setShowKleurPicker] = useState(false)
+  const [showNotitieInput, setShowNotitieInput] = useState(false)
+  const [notitieInput, setNotitieInput] = useState('')
 
-  // Reset kleur picker wanneer selectie verandert
+  // Reset pickers en sync notitie wanneer selectie verandert
   useEffect(() => {
     setShowKleurPicker(false)
-  }, [geselecteerdItem?.id])
+    setShowNotitieInput(false)
+    setNotitieInput(geselecteerdItem?.notitie ?? '')
+  }, [geselecteerdItem?.id, geselecteerdItem?.notitie])
   // Info over geselecteerd meubel uit lijst
   const tePlaatsenMeubel = tePlaatsenMeubelId
     ? beschikbareMeubels.find(m => m.id === tePlaatsenMeubelId)
@@ -164,6 +166,47 @@ export default function MobileToolbar({
         </div>
       )}
 
+      {/* Notitie input popup - alleen als item geselecteerd en input actief */}
+      {geselecteerdItem && showNotitieInput && onNotitieChange && (
+        <div className="flex justify-center mb-3 animate-scale-in">
+          <div className="glass-pill px-3 py-2 flex flex-col gap-2 w-[280px]">
+            <input
+              type="text"
+              value={notitieInput}
+              onChange={(e) => setNotitieInput(e.target.value.slice(0, 100))}
+              placeholder="Bijv. IKEA KALLAX, van oma..."
+              className="w-full px-3 py-2 text-sm bg-white/50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              maxLength={100}
+              autoFocus
+            />
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-slate-400">{notitieInput.length}/100</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setShowNotitieInput(false)
+                    setNotitieInput(geselecteerdItem?.notitie ?? '')
+                  }}
+                  className="px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 rounded-lg active:scale-95"
+                >
+                  Annuleer
+                </button>
+                <button
+                  onClick={() => {
+                    const trimmed = notitieInput.trim()
+                    onNotitieChange(trimmed || undefined)
+                    setShowNotitieInput(false)
+                  }}
+                  className="px-3 py-1.5 text-xs font-medium text-white bg-blue-500 rounded-lg active:scale-95"
+                >
+                  Opslaan
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Status bar als meubel geselecteerd */}
       {(tePlaatsenMeubel || geselecteerdMeubel) && (
         <div className="flex justify-center mb-3 animate-float-up">
@@ -193,11 +236,22 @@ export default function MobileToolbar({
             {tePlaatsenMeubel && (
               <span className="text-xs text-blue-600 font-medium">Tap om te plaatsen</span>
             )}
-            {/* Notitie indicator */}
-            {geselecteerdItem?.notitie && (
-              <span className="text-xs text-slate-500 truncate max-w-[100px]">
-                📝 {geselecteerdItem.notitie}
-              </span>
+            {/* Notitie indicator/button - tappable om te bewerken */}
+            {geselecteerdItem && onNotitieChange && (
+              <button
+                onClick={() => {
+                  setShowNotitieInput(!showNotitieInput)
+                  setShowKleurPicker(false)
+                }}
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-all active:scale-95 ${
+                  showNotitieInput ? 'bg-blue-100 text-blue-600' : 'text-slate-500 hover:bg-slate-100'
+                }`}
+              >
+                <span>📝</span>
+                <span className="truncate max-w-[80px]">
+                  {geselecteerdItem.notitie || 'Notitie'}
+                </span>
+              </button>
             )}
           </div>
         </div>
