@@ -196,7 +196,7 @@ export default function MobileMenu({
                       onClose()
                     }}
                     disabled={isExporting}
-                    className="w-full glass-button flex items-center gap-3 px-3 py-2.5 text-left disabled:opacity-50"
+                    className="w-full glass-button flex items-center gap-3 px-3 py-2.5 text-left disabled:opacity-50 mt-1"
                   >
                     <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/30">
                       {isExporting ? (

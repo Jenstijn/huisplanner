@@ -369,3 +369,10 @@ Dit voorkomt dat er bugs worden opgeleverd die pas later ontdekt worden.
 - **BEPERKING:** Google OAuth login kan niet automatisch uitgevoerd worden (beveiligingsbeperking)
 - **WORKAROUND:** Gebruiker moet zelf inloggen via browser, daarna blijft sessie actief
 - **TIP:** Test auth-gerelateerde features handmatig of vraag gebruiker om in te loggen
+
+### Button Spacing in Mobile Menus (Fout Geleerd)
+- **FOUT:** Nieuwe button toegevoegd aan bestaande sectie zonder expliciete margin
+- **PROBLEEM:** Buttons plakten aan elkaar zonder visuele scheiding (bijv. "Deel deze layout" en "Exporteer als PDF")
+- **CORRECT:** Bij toevoegen van buttons aan een sectie zonder `space-y-X` wrapper, altijd expliciet margin toevoegen (`mt-1` of `mt-2`)
+- **PATROON:** Check altijd of de parent container automatische spacing heeft (zoals `space-y-1`). Zo niet, voeg zelf margin toe.
+- **TIP:** Na het toevoegen van UI elementen aan bestaande lijsten/secties: maak een screenshot en controleer visueel op spacing issues
