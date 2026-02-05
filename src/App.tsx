@@ -6,13 +6,15 @@ import ZoomControls from './components/ZoomControls'
 import EigenschappenPaneel from './components/EigenschappenPaneel'
 import LoginScherm from './components/LoginScherm'
 import LayoutSelector from './components/LayoutSelector'
+import MobileAppContent from './components/mobile/MobileAppContent'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { usePlattegrond } from './hooks/usePlattegrond'
+import { useIsMobile } from './hooks/useIsMobile'
 import { GeplaatstMeubel } from './types'
 import { beschikbareMeubels, PIXELS_PER_METER } from './data/appartement'
 
 // App versie - update bij elke release
-const APP_VERSION = '1.1.0'
+const APP_VERSION = '1.2.0'
 
 // Canvas dimensies (moet overeenkomen met Plattegrond.tsx)
 const CANVAS_BREEDTE_M = 9
@@ -21,15 +23,15 @@ const OFFSET = 40
 const CANVAS_BREEDTE_PX = CANVAS_BREEDTE_M * PIXELS_PER_METER + OFFSET * 2
 const CANVAS_HOOGTE_PX = CANVAS_HOOGTE_M * PIXELS_PER_METER + OFFSET * 2
 
-// Hoofd app content (na login)
+// Hoofd app content (na login) - kiest tussen desktop en mobile
 function AppContent() {
   const { user, logout } = useAuth()
+  const { isMobile } = useIsMobile()
   const {
     items: geplaatsteItems,
     loading: dataLoading,
     error: dataError,
     saveItems,
-    // Layout functies
     layouts,
     activeLayoutId,
     switchLayout,
@@ -39,6 +41,104 @@ function AppContent() {
     deleteLayout
   } = usePlattegrond()
 
+  // Loading state
+  if (dataLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600">Plattegrond laden...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Error state
+  if (dataError) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
+        <div className="text-center bg-white p-8 rounded-2xl shadow-lg max-w-md">
+          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h2 className="text-lg font-semibold text-slate-800 mb-2">Er ging iets mis</h2>
+          <p className="text-slate-600 mb-4">{dataError}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            Probeer opnieuw
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // Mobile versie
+  if (isMobile) {
+    return (
+      <MobileAppContent
+        user={user}
+        logout={logout}
+        geplaatsteItems={geplaatsteItems}
+        saveItems={saveItems}
+        layouts={layouts}
+        activeLayoutId={activeLayoutId}
+        switchLayout={switchLayout}
+        createLayout={createLayout}
+        renameLayout={renameLayout}
+        duplicateLayout={duplicateLayout}
+        deleteLayout={deleteLayout}
+      />
+    )
+  }
+
+  // Desktop versie
+  return (
+    <DesktopAppContent
+      user={user}
+      logout={logout}
+      geplaatsteItems={geplaatsteItems}
+      saveItems={saveItems}
+      layouts={layouts}
+      activeLayoutId={activeLayoutId}
+      switchLayout={switchLayout}
+      createLayout={createLayout}
+      renameLayout={renameLayout}
+      duplicateLayout={duplicateLayout}
+      deleteLayout={deleteLayout}
+    />
+  )
+}
+
+// Desktop app content
+function DesktopAppContent({
+  user,
+  logout,
+  geplaatsteItems,
+  saveItems,
+  layouts,
+  activeLayoutId,
+  switchLayout,
+  createLayout,
+  renameLayout,
+  duplicateLayout,
+  deleteLayout
+}: {
+  user: ReturnType<typeof useAuth>['user']
+  logout: () => void
+  geplaatsteItems: GeplaatstMeubel[]
+  saveItems: (items: GeplaatstMeubel[]) => void
+  layouts: ReturnType<typeof usePlattegrond>['layouts']
+  activeLayoutId: string
+  switchLayout: (id: string) => void
+  createLayout: (naam: string) => Promise<string>
+  renameLayout: (id: string, naam: string) => Promise<void>
+  duplicateLayout: (id: string, naam: string) => Promise<string>
+  deleteLayout: (id: string) => Promise<void>
+}) {
   // Ref voor de canvas container om beschikbare ruimte te meten
   const canvasContainerRef = useRef<HTMLDivElement>(null)
 
@@ -281,41 +381,6 @@ function AppContent() {
       setTePlaatsenMeubelId(null)
       setCustomAfmetingen(null)
     }
-  }
-
-  // Loading state
-  if (dataLoading) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-600">Plattegrond laden...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Error state
-  if (dataError) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
-        <div className="text-center bg-white p-8 rounded-2xl shadow-lg max-w-md">
-          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <h2 className="text-lg font-semibold text-slate-800 mb-2">Er ging iets mis</h2>
-          <p className="text-slate-600 mb-4">{dataError}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-          >
-            Probeer opnieuw
-          </button>
-        </div>
-      </div>
-    )
   }
 
   return (

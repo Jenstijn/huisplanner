@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Stage, Layer, Rect, Text, Group, Line, Circle, Arc, Ellipse } from 'react-konva'
 import AirfryerEasterEgg from './AirfryerEasterEgg'
 import {
@@ -555,6 +555,11 @@ export default function Plattegrond({
     height: number
   } | null>(null)
 
+  // Touch/pinch-to-zoom state
+  const lastTouchDistRef = useRef<number | null>(null)
+  const lastTouchCenterRef = useRef<{ x: number; y: number } | null>(null)
+  const isPinchingRef = useRef(false)
+
   // Bereken buitengrenzen één keer
   const buitenGrenzen = getBuitenGrenzen(muren)
 
@@ -590,6 +595,86 @@ export default function Plattegrond({
 
     onZoomChange?.(clampedScale)
     onStageMove?.(newPos)
+  }
+
+  // Touch handlers voor pinch-to-zoom
+  const getDistance = (touch1: Touch, touch2: Touch) => {
+    const dx = touch1.clientX - touch2.clientX
+    const dy = touch1.clientY - touch2.clientY
+    return Math.sqrt(dx * dx + dy * dy)
+  }
+
+  const getCenter = (touch1: Touch, touch2: Touch) => {
+    return {
+      x: (touch1.clientX + touch2.clientX) / 2,
+      y: (touch1.clientY + touch2.clientY) / 2
+    }
+  }
+
+  const handleTouchStart = (e: KonvaEventObject<TouchEvent>) => {
+    const touches = e.evt.touches
+    if (touches.length === 2) {
+      // Start pinch gesture
+      isPinchingRef.current = true
+      lastTouchDistRef.current = getDistance(touches[0], touches[1])
+      lastTouchCenterRef.current = getCenter(touches[0], touches[1])
+      e.evt.preventDefault()
+    }
+  }
+
+  const handleTouchMove = (e: KonvaEventObject<TouchEvent>) => {
+    const touches = e.evt.touches
+    if (touches.length === 2 && isPinchingRef.current) {
+      e.evt.preventDefault()
+
+      const stage = e.target.getStage()
+      if (!stage) return
+
+      const newDist = getDistance(touches[0], touches[1])
+      const newCenter = getCenter(touches[0], touches[1])
+
+      if (lastTouchDistRef.current && lastTouchCenterRef.current) {
+        // Calculate new zoom
+        const scaleRatio = newDist / lastTouchDistRef.current
+        const newZoom = Math.max(0.3, Math.min(3, zoom * scaleRatio))
+
+        // Get stage container position for correct center calculation
+        const container = stage.container()
+        const rect = container.getBoundingClientRect()
+
+        // Calculate zoom center relative to stage
+        const centerX = newCenter.x - rect.left
+        const centerY = newCenter.y - rect.top
+
+        // Calculate point to zoom towards
+        const mousePointTo = {
+          x: (centerX - stagePosition.x) / zoom,
+          y: (centerY - stagePosition.y) / zoom,
+        }
+
+        // Calculate pan offset from pinch movement
+        const panDx = newCenter.x - lastTouchCenterRef.current.x
+        const panDy = newCenter.y - lastTouchCenterRef.current.y
+
+        // New position
+        const newPos = {
+          x: centerX - mousePointTo.x * newZoom + panDx,
+          y: centerY - mousePointTo.y * newZoom + panDy,
+        }
+
+        onZoomChange?.(newZoom)
+        onStageMove?.(newPos)
+      }
+
+      lastTouchDistRef.current = newDist
+      lastTouchCenterRef.current = newCenter
+    }
+  }
+
+  const handleTouchEnd = () => {
+    isPinchingRef.current = false
+    lastTouchDistRef.current = null
+    lastTouchCenterRef.current = null
   }
 
   // Helper functie om muis positie naar meters te converteren
@@ -714,9 +799,13 @@ export default function Plattegrond({
       scaleY={zoom}
       x={stagePosition.x}
       y={stagePosition.y}
-      draggable={zoom > 1 && !lineaalModus}
+      draggable={zoom > 1 && !lineaalModus && !isPinchingRef.current}
       onClick={handleStageClick}
+      onTap={handleStageClick}
       onWheel={handleWheel}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
       onMouseDown={handleLineaalMouseDown}
       onMouseMove={handleLineaalMouseMove}
       onMouseUp={handleLineaalMouseUp}
@@ -732,7 +821,8 @@ export default function Plattegrond({
         backgroundColor: '#fafafa',
         borderRadius: '12px',
         boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)',
-        cursor: lineaalModus ? 'crosshair' : 'default'
+        cursor: lineaalModus ? 'crosshair' : 'default',
+        touchAction: 'none' // Voorkom browser gestures
       }}
     >
       <Layer>
@@ -1014,6 +1104,11 @@ export default function Plattegrond({
               name="meubel"
               onClick={(e) => {
                 e.cancelBubble = true  // Stop event propagation naar Stage
+                onItemSelect(item.id)
+              }}
+              onTap={(e) => {
+                // Touch versie van onClick
+                e.cancelBubble = true
                 onItemSelect(item.id)
               }}
               onDragMove={(e) => {

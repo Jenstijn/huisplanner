@@ -168,11 +168,39 @@ Dit voorkomt dat er bugs worden opgeleverd die pas later ontdekt worden.
 
 ### Firebase & Firestore Integratie
 - **AuthContext** (`src/contexts/AuthContext.tsx`): Beheert login state met Google OAuth
-- **usePlattegrond hook** (`src/hooks/usePlattegrond.ts`): Real-time sync van geplaatste meubels
+- **usePlattegrond hook** (`src/hooks/usePlattegrond.ts`): Real-time sync van geplaatste meubels en layouts
 - **onSnapshot**: Luistert naar Firestore wijzigingen, update lokale state automatisch
 - **saveItems**: Slaat wijzigingen op naar Firestore, andere gebruikers zien het direct
-- **Document structuur**: `plattegronden/{id}` met `items: GeplaatstMeubel[]` en `updatedAt: timestamp`
+- **Document structuur** (nieuwe layout structuur):
+  ```
+  plattegronden/gedeeld/
+    layouts: {
+      [layoutId]: { id, naam, items: GeplaatstMeubel[], createdAt, updatedAt }
+    }
+    activeLayoutId: string
+  ```
+- **Automatische migratie**: Oude structuur (direct `items` array) wordt automatisch naar layouts geconverteerd
 - Environment variables beginnen met `VITE_` voor Vite toegang in browser
+
+### Meerdere Layouts Feature (v1.1.0)
+- **LayoutSelector component** (`src/components/LayoutSelector.tsx`): Dropdown UI in header
+- **Functies**: createLayout, switchLayout, renameLayout, duplicateLayout, deleteLayout
+- Inline editing voor layout namen (dubbelklik of edit icon)
+- Bevestiging nodig voor verwijderen (2-staps: klik prullenbak, dan bevestig)
+- Laatste layout kan niet worden verwijderd
+- Real-time sync: layout wisselen door andere gebruiker update ook jouw scherm
+
+### Airfryer Easter Egg 🍟
+- **Component**: `src/components/AirfryerEasterEgg.tsx`
+- Staat op keuken aanrecht, gedraaid zodat frikadel naar links vliegt
+- Random interval: 10-30 sec (dev) of 2-5 min (productie)
+- Animatie via Konva.Tween: spring naar links, roteer 720°, fade out
+- Props: `x`, `y`, `pixelsPerMeter`, `rotatie` (in graden)
+
+### App Versioning
+- Versienummer in `APP_VERSION` constante bovenaan `App.tsx`
+- Weergegeven linksonder in subtle gray (`text-slate-400`)
+- Update bij elke release: MAJOR.MINOR.PATCH (bijv. 1.1.0)
 
 ### Deployment Workflow
 - **Lokaal testen**: Maak wijzigingen, test met `npm run dev`
@@ -198,3 +226,54 @@ Dit voorkomt dat er bugs worden opgeleverd die pas later ontdekt worden.
    - Toolbar te breed: `flex-wrap items-center justify-center max-w-full`
    - Sidebar te hoog: `h-full overflow-auto`
    - Input velden: vaste `w-XX` + `text-xs` voor compactheid
+
+### Zoom Initialisatie Bug (Fout Geleerd)
+- **FOUT:** Zoom state initieel op `null` zetten en wachten op berekening
+- **PROBLEEM:** Plattegrond was leeg/onzichtbaar bij eerste load tot gebruiker zoomde
+- **CORRECT:** Begin met een default waarde (bijv. `0.6`) en update later indien nodig
+- **EXTRA:** Gebruik `zoomInitialized` state om te tracken of auto-zoom al gedaan is
+- **PATROON:** Voor waardes die direct nodig zijn voor rendering, NOOIT `null` als initial state
+
+### Element Positionering Verifiëren (Fout Geleerd)
+- **FOUT:** Airfryer gepositioneerd op basis van coördinaten zonder visuele check
+- **PROBLEEM:** Element kwam op verkeerde plek terecht (oven/wasbak i.p.v. werkblad)
+- **CORRECT:** Na elke positie-aanpassing een screenshot maken en visueel verifiëren
+- **TIP:** Kleine aanpassingen (0.5m) kunnen groot verschil maken in plattegrond context
+
+### Animatie Richting bij Rotatie
+- **CONTEXT:** Frikadel animatie vloog "omhoog" maar moest "naar links" (van aanrecht af)
+- **OPLOSSING:** Element 90° roteren zodat de oorspronkelijke animatie-as nu de gewenste richting is
+- **ALTERNATIEF:** Animatie aanpassen van y-as naar x-as beweging
+- **TIP:** Bij geroteerde elementen: denk na over welke richting "omhoog" of "vooruit" betekent
+
+### Real-time Sync Architectuur
+- **Firebase Firestore** biedt automatische real-time sync tussen alle apparaten
+- Zodra data in Firestore staat, sync't het naar ALLE clients die luisteren
+- Geen extra werk nodig voor cross-device sync (laptop ↔ telefoon)
+- `onSnapshot` listener houdt lokale state automatisch in sync met Firestore
+
+### Mobile/iPhone Support (v1.2.0)
+**Responsive layout** met automatische detectie van mobile devices:
+- **useIsMobile hook** (`src/hooks/useIsMobile.ts`): Detecteert mobile via viewport < 768px of touch support
+- **MobileAppContent** (`src/components/mobile/MobileAppContent.tsx`): Volledige mobile layout wrapper
+- **Conditional rendering** in `App.tsx`: Toont automatisch desktop of mobile versie
+
+**Mobile componenten:**
+- `MobileHeader.tsx` - Compacte header met logo, layout dropdown, hamburger menu
+- `BottomSheet.tsx` - Swipeable sheet voor meubel selectie (drag-to-close)
+- `MobileMeubelSelector.tsx` - Grid layout met grote touch targets (48x48px min)
+- `MobileToolbar.tsx` - Floating action buttons: Meubel, Roteer, Meten, Verwijder
+- `MobileMenu.tsx` - Slide-in drawer met user info, statistieken, layout acties
+
+**Touch optimalisaties:**
+- **Tap-to-place** in plaats van drag & drop: selecteer meubel → tap op canvas
+- **Pinch-to-zoom** via Konva touch events (twee-vinger gesture)
+- **Touch drag** voor meubels verplaatsen
+- `touchAction: 'none'` op canvas voorkomt browser gestures
+
+**Mobile UI flow:**
+1. Tap "Meubel" → Bottom sheet opent
+2. Selecteer meubel (met optionele afmeting)
+3. Sheet sluit → status bar toont "Tap om te plaatsen"
+4. Tap op canvas → meubel geplaatst
+5. Tap op meubel → selecteren voor roteer/verwijder
