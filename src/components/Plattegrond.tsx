@@ -11,6 +11,8 @@ import {
 import { GeplaatstMeubel, Kamer, Muur } from '../types'
 import { KonvaEventObject } from 'konva/lib/Node'
 import { snapToWalls, snapStoelToTafel, getBuitenGrenzen, constrainToBounds } from '../utils/snapLogic'
+import { detectCollisions } from '../utils/collisionUtils'
+import { getKamerOppervlakte, formatOppervlakte } from '../utils/kamerUtils'
 
 interface PlattegrondProps {
   geplaatsteItems: GeplaatstMeubel[]
@@ -582,6 +584,9 @@ export default function Plattegrond({
   // Bereken buitengrenzen één keer
   const buitenGrenzen = getBuitenGrenzen(muren)
 
+  // Detecteer welke meubels met elkaar overlappen (collision detection)
+  const collidingItemIds = detectCollisions(geplaatsteItems, beschikbareMeubels)
+
   // Wheel/trackpad zoom handler
   const handleWheel = (e: KonvaEventObject<WheelEvent>) => {
     e.evt.preventDefault()
@@ -956,6 +961,7 @@ export default function Plattegrond({
         {/* Kamers tekenen */}
         {appartementKamers.map((kamer) => {
           const midden = getKamerMidden(kamer)
+          const oppervlakte = getKamerOppervlakte(kamer)
 
           if (kamer.punten && kamer.punten.length > 0) {
             return (
@@ -967,9 +973,10 @@ export default function Plattegrond({
                   stroke={kamer.isGemeenschappelijk ? '#a0a0a0' : '#4a4a4a'}
                   strokeWidth={kamer.isGemeenschappelijk ? 1.5 : 2}
                 />
+                {/* Kamer naam */}
                 <Text
                   x={midden.x - 40}
-                  y={midden.y - 8}
+                  y={midden.y - 14}
                   width={80}
                   text={kamer.naam}
                   fontSize={11}
@@ -978,6 +985,19 @@ export default function Plattegrond({
                   fill={kamer.isGemeenschappelijk ? '#808080' : '#404040'}
                   align="center"
                 />
+                {/* Oppervlakte label */}
+                {!kamer.isGemeenschappelijk && oppervlakte > 0 && (
+                  <Text
+                    x={midden.x - 40}
+                    y={midden.y + 2}
+                    width={80}
+                    text={formatOppervlakte(oppervlakte)}
+                    fontSize={9}
+                    fontFamily="Inter, system-ui, sans-serif"
+                    fill="#707070"
+                    align="center"
+                  />
+                )}
               </Group>
             )
           }
@@ -1189,6 +1209,9 @@ export default function Plattegrond({
           if (!meubel) return null
 
           const isGeselecteerd = item.id === geselecteerdItem
+          const isColliding = collidingItemIds.has(item.id)
+          const hasNotitie = !!item.notitie
+          const displayKleur = item.customKleur ?? meubel.kleur
 
           // Gebruik resizePreview voor live preview, anders custom/standaard afmetingen
           const baseWidth = item.customBreedte ?? meubel.breedte
@@ -1289,8 +1312,54 @@ export default function Plattegrond({
             >
               {renderer
                 ? renderer({ width, height, isSelected: isGeselecteerd })
-                : renderDefault({ width, height, isSelected: isGeselecteerd }, meubel.kleur, meubel.naam)
+                : renderDefault({ width, height, isSelected: isGeselecteerd }, displayKleur, meubel.naam)
               }
+
+              {/* Custom kleur overlay (semi-transparant over het hele meubel) */}
+              {item.customKleur && (
+                <Rect
+                  width={width}
+                  height={height}
+                  fill={item.customKleur}
+                  opacity={0.35}
+                  cornerRadius={4}
+                  listening={false}
+                />
+              )}
+
+              {/* Collision indicator - rode rand als meubel overlapt met ander */}
+              {isColliding && !isGeselecteerd && (
+                <Rect
+                  width={width}
+                  height={height}
+                  stroke="#ef4444"
+                  strokeWidth={3}
+                  cornerRadius={4}
+                  shadowColor="#ef4444"
+                  shadowBlur={10}
+                  shadowOpacity={0.5}
+                  listening={false}
+                />
+              )}
+
+              {/* Notitie indicator - klein icoon rechtsboven */}
+              {hasNotitie && (
+                <Group x={width - 14} y={-6}>
+                  <Circle
+                    radius={10}
+                    fill="#3b82f6"
+                    stroke="#ffffff"
+                    strokeWidth={2}
+                  />
+                  <Text
+                    x={-4}
+                    y={-6}
+                    text="📝"
+                    fontSize={10}
+                  />
+                </Group>
+              )}
+
               {/* Selectie indicator */}
               {isGeselecteerd && (
                 <>

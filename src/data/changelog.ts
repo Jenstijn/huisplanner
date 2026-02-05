@@ -17,6 +17,19 @@ export interface Release {
 
 export const changelog: Release[] = [
   {
+    version: '1.9.0',
+    date: '2026-02-05',
+    title: 'Nuttige Features',
+    entries: [
+      { type: 'feature', description: 'Kamer oppervlaktes worden nu getoond in m² op de plattegrond en in het overzicht' },
+      { type: 'feature', description: 'Collision detection: rode highlight wanneer meubels overlappen' },
+      { type: 'feature', description: 'Kleur customization: kies een eigen kleur per geplaatst meubel' },
+      { type: 'feature', description: 'Notities op meubels: voeg notities toe zoals "IKEA KALLAX" of "Van oma"' },
+      { type: 'feature', description: 'Uitgebreide meubel bibliotheek: badkamer, kantoor en tuin categorieën toegevoegd' },
+      { type: 'improvement', description: 'Nieuwe meubels: badkamermeubel, handdoekenrek, wasmand, groot bureau, dossierkast, tuinstoel, tuintafel, plantenbak' },
+    ]
+  },
+  {
     version: '1.8.0',
     date: '2026-02-05',
     title: 'Undo/Redo & Shortcuts',

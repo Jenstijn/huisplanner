@@ -234,6 +234,30 @@ export default function MobileAppContent({
     setTePlaatsenMeubelId(null)
   }
 
+  // Kleur wijzigen
+  const handleKleurChange = (kleur: string | undefined) => {
+    if (geselecteerdItemId) {
+      const updatedItems = geplaatsteItems.map(item =>
+        item.id === geselecteerdItemId
+          ? { ...item, customKleur: kleur }
+          : item
+      )
+      saveItemsWithHistory(updatedItems)
+    }
+  }
+
+  // Notitie wijzigen
+  const handleNotitieChange = (notitie: string | undefined) => {
+    if (geselecteerdItemId) {
+      const updatedItems = geplaatsteItems.map(item =>
+        item.id === geselecteerdItemId
+          ? { ...item, notitie: notitie }
+          : item
+      )
+      saveItemsWithHistory(updatedItems)
+    }
+  }
+
   const handleLineaalToggle = () => {
     setLineaalModus(!lineaalModus)
     if (lineaalModus) {
@@ -353,6 +377,8 @@ export default function MobileAppContent({
         onUndo={handleUndo}
         onRedo={handleRedo}
         onDuplicate={geselecteerdItemId ? handleDuplicate : undefined}
+        onKleurChange={handleKleurChange}
+        onNotitieChange={handleNotitieChange}
       />
 
       {/* Meubel Selection Bottom Sheet */}

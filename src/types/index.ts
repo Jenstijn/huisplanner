@@ -88,7 +88,7 @@ export interface Meubel {
   kleur: string
   icoon?: string
   // Uitgebreide opties:
-  categorie?: 'woonkamer' | 'slaapkamer' | 'eetkamer' | 'accessoires'
+  categorie?: 'woonkamer' | 'slaapkamer' | 'eetkamer' | 'accessoires' | 'badkamer' | 'kantoor' | 'tuin'
   beschikbareAfmetingen?: AfmetingOptie[]  // preset afmetingen
   handmatigeAfmetingen?: boolean           // toestaan van custom afmetingen
   minBreedte?: number                      // minimale breedte voor handmatig (meters)
@@ -107,6 +107,9 @@ export interface GeplaatstMeubel {
   // Custom afmetingen (overschrijft meubel defaults indien gezet):
   customBreedte?: number
   customHoogte?: number
+  // Customization opties:
+  customKleur?: string   // Hex kleur bijv. '#ff5733' voor eigen meubel visualisatie
+  notitie?: string       // Notitie bijv. "IKEA KALLAX" of "Van Marktplaats"
 }
 
 // De volledige staat van de planner

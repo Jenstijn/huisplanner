@@ -1,5 +1,18 @@
+import { useState, useEffect } from 'react'
 import { GeplaatstMeubel } from '../../types'
 import { beschikbareMeubels } from '../../data/appartement'
+
+// Preset kleuren voor kleur picker
+const PRESET_KLEUREN = [
+  { naam: 'Standaard', kleur: null },
+  { naam: 'Rood', kleur: '#ef4444' },
+  { naam: 'Oranje', kleur: '#f97316' },
+  { naam: 'Geel', kleur: '#eab308' },
+  { naam: 'Groen', kleur: '#22c55e' },
+  { naam: 'Blauw', kleur: '#3b82f6' },
+  { naam: 'Paars', kleur: '#a855f7' },
+  { naam: 'Roze', kleur: '#ec4899' },
+]
 
 interface MobileToolbarProps {
   /** Meubel dat geselecteerd is om te plaatsen */
@@ -27,6 +40,9 @@ interface MobileToolbarProps {
   onRedo?: () => void
   /** Duplicate prop */
   onDuplicate?: () => void
+  /** Kleur en notitie callbacks */
+  onKleurChange?: (kleur: string | undefined) => void
+  onNotitieChange?: (notitie: string | undefined) => void
 }
 
 /**
@@ -47,8 +63,19 @@ export default function MobileToolbar({
   canRedo,
   onUndo,
   onRedo,
-  onDuplicate
+  onDuplicate,
+  onKleurChange,
+  onNotitieChange: _onNotitieChange // Beschikbaar voor toekomstige notitie UI
 }: MobileToolbarProps) {
+  // Voorlopig geen notitie UI op mobile, maar prop wel beschikbaar
+  void _onNotitieChange
+  // State voor uitklapmenu
+  const [showKleurPicker, setShowKleurPicker] = useState(false)
+
+  // Reset kleur picker wanneer selectie verandert
+  useEffect(() => {
+    setShowKleurPicker(false)
+  }, [geselecteerdItem?.id])
   // Info over geselecteerd meubel uit lijst
   const tePlaatsenMeubel = tePlaatsenMeubelId
     ? beschikbareMeubels.find(m => m.id === tePlaatsenMeubelId)
@@ -112,21 +139,65 @@ export default function MobileToolbar({
         </div>
       )}
 
+      {/* Kleur picker popup - alleen als item geselecteerd en picker actief */}
+      {geselecteerdItem && showKleurPicker && onKleurChange && (
+        <div className="flex justify-center mb-3 animate-scale-in">
+          <div className="glass-pill px-3 py-2 flex items-center gap-2 flex-wrap justify-center max-w-[300px]">
+            {PRESET_KLEUREN.map(({ naam, kleur }) => (
+              <button
+                key={naam}
+                onClick={() => {
+                  onKleurChange(kleur ?? undefined)
+                  setShowKleurPicker(false)
+                }}
+                className={`w-8 h-8 rounded-lg transition-all active:scale-90 ${
+                  (kleur === null && !geselecteerdItem.customKleur) ||
+                  kleur === geselecteerdItem.customKleur
+                    ? 'ring-2 ring-blue-500 ring-offset-2'
+                    : ''
+                }`}
+                style={{ backgroundColor: kleur ?? geselecteerdMeubel?.kleur }}
+                title={naam}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Status bar als meubel geselecteerd */}
       {(tePlaatsenMeubel || geselecteerdMeubel) && (
         <div className="flex justify-center mb-3 animate-float-up">
           <div className={`glass-pill px-4 py-2 flex items-center gap-2.5 ${
             tePlaatsenMeubel ? 'ring-2 ring-blue-400/50' : ''
           }`}>
-            <div
-              className="w-5 h-5 rounded-lg shadow-sm"
-              style={{ backgroundColor: (tePlaatsenMeubel || geselecteerdMeubel)?.kleur }}
-            />
+            {/* Kleur button - toont huidige kleur, opent picker bij tap */}
+            {geselecteerdItem && onKleurChange && (
+              <button
+                onClick={() => setShowKleurPicker(!showKleurPicker)}
+                className={`w-6 h-6 rounded-lg shadow-sm transition-all active:scale-90 ${
+                  showKleurPicker ? 'ring-2 ring-blue-400' : ''
+                }`}
+                style={{ backgroundColor: geselecteerdItem.customKleur ?? geselecteerdMeubel?.kleur }}
+                title="Wijzig kleur"
+              />
+            )}
+            {!geselecteerdItem && (
+              <div
+                className="w-5 h-5 rounded-lg shadow-sm"
+                style={{ backgroundColor: (tePlaatsenMeubel || geselecteerdMeubel)?.kleur }}
+              />
+            )}
             <span className="text-sm font-medium text-slate-700">
               {tePlaatsenMeubel?.naam || geselecteerdMeubel?.naam}
             </span>
             {tePlaatsenMeubel && (
               <span className="text-xs text-blue-600 font-medium">Tap om te plaatsen</span>
+            )}
+            {/* Notitie indicator */}
+            {geselecteerdItem?.notitie && (
+              <span className="text-xs text-slate-500 truncate max-w-[100px]">
+                📝 {geselecteerdItem.notitie}
+              </span>
             )}
           </div>
         </div>

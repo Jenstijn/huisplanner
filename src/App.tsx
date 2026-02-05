@@ -15,13 +15,13 @@ import { useSharing } from './hooks/useSharing'
 import { useIsMobile } from './hooks/useIsMobile'
 import { useChangelog } from './hooks/useChangelog'
 import { GeplaatstMeubel, Layout } from './types'
-import { beschikbareMeubels, PIXELS_PER_METER } from './data/appartement'
+import { beschikbareMeubels, PIXELS_PER_METER, appartementKamers } from './data/appartement'
 import { exportStageToPdf } from './utils/exportPdf'
 import { useHistory } from './hooks/useHistory'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 
 // App versie - update bij elke release
-const APP_VERSION = '1.8.0'
+const APP_VERSION = '1.9.0'
 
 // Canvas dimensies (moet overeenkomen met Plattegrond.tsx)
 const CANVAS_BREEDTE_M = 9
@@ -562,6 +562,30 @@ function DesktopAppContent({
     setCustomAfmetingen(null)
   }
 
+  // Kleur wijzigen
+  const handleKleurChange = (kleur: string | undefined) => {
+    if (geselecteerdItemId) {
+      const updatedItems = geplaatsteItems.map(item =>
+        item.id === geselecteerdItemId
+          ? { ...item, customKleur: kleur }
+          : item
+      )
+      saveItemsWithHistory(updatedItems)
+    }
+  }
+
+  // Notitie wijzigen
+  const handleNotitieChange = (notitie: string | undefined) => {
+    if (geselecteerdItemId) {
+      const updatedItems = geplaatsteItems.map(item =>
+        item.id === geselecteerdItemId
+          ? { ...item, notitie: notitie }
+          : item
+      )
+      saveItemsWithHistory(updatedItems)
+    }
+  }
+
   // Meubel plaatsen via drag-and-drop
   const handleDrop = (meubelId: string, x: number, y: number, customBreedte?: number, customHoogte?: number) => {
     const meubel = beschikbareMeubels.find(m => m.id === meubelId)
@@ -825,7 +849,10 @@ function DesktopAppContent({
               }
               geplaatsteItems={geplaatsteItems}
               beschikbareMeubels={beschikbareMeubels}
+              kamers={appartementKamers}
               zoom={zoom}
+              onKleurChange={handleKleurChange}
+              onNotitieChange={handleNotitieChange}
             />
             </aside>
           </div>

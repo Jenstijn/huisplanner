@@ -1214,4 +1214,155 @@ export const beschikbareMeubels: Meubel[] = [
     minHoogte: 0.3,
     maxHoogte: 0.6
   },
+
+  // === BADKAMER ===
+  {
+    id: 'badkamermeubel',
+    naam: 'Badkamermeubel',
+    breedte: 1.0,
+    hoogte: 0.5,
+    kleur: '#607d8b',
+    categorie: 'badkamer',
+    beschikbareAfmetingen: [
+      { label: 'Compact (60cm)', breedte: 0.6, hoogte: 0.45 },
+      { label: 'Standaard (100cm)', breedte: 1.0, hoogte: 0.5 },
+      { label: 'Dubbel (120cm)', breedte: 1.2, hoogte: 0.5 },
+    ],
+    handmatigeAfmetingen: true,
+    minBreedte: 0.4,
+    maxBreedte: 1.5,
+    minHoogte: 0.35,
+    maxHoogte: 0.6
+  },
+  {
+    id: 'handdoekenrek',
+    naam: 'Handdoekenrek',
+    breedte: 0.6,
+    hoogte: 0.15,
+    kleur: '#90a4ae',
+    categorie: 'badkamer',
+    beschikbareAfmetingen: [
+      { label: 'Smal (40cm)', breedte: 0.4, hoogte: 0.12 },
+      { label: 'Breed (60cm)', breedte: 0.6, hoogte: 0.15 },
+    ],
+    handmatigeAfmetingen: true,
+    minBreedte: 0.3,
+    maxBreedte: 1.0,
+    minHoogte: 0.1,
+    maxHoogte: 0.25
+  },
+  {
+    id: 'wasmand',
+    naam: 'Wasmand',
+    breedte: 0.45,
+    hoogte: 0.35,
+    kleur: '#8d6e63',
+    categorie: 'badkamer',
+    handmatigeAfmetingen: true,
+    minBreedte: 0.3,
+    maxBreedte: 0.6,
+    minHoogte: 0.25,
+    maxHoogte: 0.5
+  },
+
+  // === KANTOOR ===
+  {
+    id: 'groot-bureau',
+    naam: 'Groot Bureau',
+    breedte: 1.8,
+    hoogte: 0.8,
+    kleur: '#5d4037',
+    categorie: 'kantoor',
+    beschikbareAfmetingen: [
+      { label: 'Standaard (160x80)', breedte: 1.6, hoogte: 0.8 },
+      { label: 'XL (180x80)', breedte: 1.8, hoogte: 0.8 },
+      { label: 'Hoek (200x100)', breedte: 2.0, hoogte: 1.0 },
+    ],
+    handmatigeAfmetingen: true,
+    minBreedte: 1.2,
+    maxBreedte: 2.5,
+    minHoogte: 0.6,
+    maxHoogte: 1.2
+  },
+  {
+    id: 'dossierkast',
+    naam: 'Dossierkast',
+    breedte: 0.45,
+    hoogte: 0.6,
+    kleur: '#78909c',
+    categorie: 'kantoor',
+    beschikbareAfmetingen: [
+      { label: '2 lades', breedte: 0.45, hoogte: 0.6 },
+      { label: '4 lades', breedte: 0.45, hoogte: 1.2 },
+    ],
+    handmatigeAfmetingen: true,
+    minBreedte: 0.35,
+    maxBreedte: 0.6,
+    minHoogte: 0.4,
+    maxHoogte: 1.5
+  },
+  {
+    id: 'printer-tafel',
+    naam: 'Printer Tafel',
+    breedte: 0.6,
+    hoogte: 0.5,
+    kleur: '#9e9e9e',
+    categorie: 'kantoor',
+    handmatigeAfmetingen: true,
+    minBreedte: 0.4,
+    maxBreedte: 0.9,
+    minHoogte: 0.4,
+    maxHoogte: 0.7
+  },
+
+  // === TUIN / BALKON ===
+  {
+    id: 'tuinstoel',
+    naam: 'Tuinstoel',
+    breedte: 0.6,
+    hoogte: 0.6,
+    kleur: '#4caf50',
+    categorie: 'tuin',
+    handmatigeAfmetingen: true,
+    minBreedte: 0.45,
+    maxBreedte: 0.8,
+    minHoogte: 0.45,
+    maxHoogte: 0.8
+  },
+  {
+    id: 'tuintafel',
+    naam: 'Tuintafel',
+    breedte: 1.2,
+    hoogte: 0.75,
+    kleur: '#795548',
+    categorie: 'tuin',
+    beschikbareAfmetingen: [
+      { label: 'Klein (80cm rond)', breedte: 0.8, hoogte: 0.8 },
+      { label: 'Rechthoek (120x75)', breedte: 1.2, hoogte: 0.75 },
+      { label: 'Groot (180x90)', breedte: 1.8, hoogte: 0.9 },
+    ],
+    handmatigeAfmetingen: true,
+    minBreedte: 0.6,
+    maxBreedte: 2.0,
+    minHoogte: 0.6,
+    maxHoogte: 1.2
+  },
+  {
+    id: 'plantenbak-groot',
+    naam: 'Plantenbak Groot',
+    breedte: 0.5,
+    hoogte: 0.5,
+    kleur: '#6d4c41',
+    categorie: 'tuin',
+    beschikbareAfmetingen: [
+      { label: 'Vierkant (40cm)', breedte: 0.4, hoogte: 0.4 },
+      { label: 'Vierkant (50cm)', breedte: 0.5, hoogte: 0.5 },
+      { label: 'Lang (80x30)', breedte: 0.8, hoogte: 0.3 },
+    ],
+    handmatigeAfmetingen: true,
+    minBreedte: 0.25,
+    maxBreedte: 1.2,
+    minHoogte: 0.25,
+    maxHoogte: 0.6
+  },
 ]

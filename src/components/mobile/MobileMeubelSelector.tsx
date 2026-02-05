@@ -12,7 +12,10 @@ const categorieNaam: Record<string, string> = {
   'woonkamer': 'Woonkamer',
   'slaapkamer': 'Slaapkamer',
   'eetkamer': 'Eetkamer',
-  'accessoires': 'Accessoires'
+  'accessoires': 'Accessoires',
+  'badkamer': 'Badkamer',
+  'kantoor': 'Kantoor',
+  'tuin': 'Tuin'
 }
 
 /**
@@ -32,7 +35,10 @@ export default function MobileMeubelSelector({
       'woonkamer': [],
       'slaapkamer': [],
       'eetkamer': [],
-      'accessoires': []
+      'accessoires': [],
+      'badkamer': [],
+      'kantoor': [],
+      'tuin': []
     }
 
     beschikbareMeubels.forEach(meubel => {

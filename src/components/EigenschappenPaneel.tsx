@@ -1,13 +1,31 @@
-import { GeplaatstMeubel, Meubel } from '../types'
+import { useState, useEffect } from 'react'
+import { GeplaatstMeubel, Meubel, Kamer } from '../types'
+import { getKamerOppervlakte, formatOppervlakte } from '../utils/kamerUtils'
+
+// Preset kleuren voor de kleur picker
+const PRESET_KLEUREN = [
+  { naam: 'Standaard', kleur: null },
+  { naam: 'Rood', kleur: '#ef4444' },
+  { naam: 'Oranje', kleur: '#f97316' },
+  { naam: 'Geel', kleur: '#eab308' },
+  { naam: 'Groen', kleur: '#22c55e' },
+  { naam: 'Blauw', kleur: '#3b82f6' },
+  { naam: 'Paars', kleur: '#a855f7' },
+  { naam: 'Roze', kleur: '#ec4899' },
+  { naam: 'Grijs', kleur: '#6b7280' },
+]
 
 interface EigenschappenPaneelProps {
   geselecteerdItem?: GeplaatstMeubel
   meubel?: Meubel
   geplaatsteItems: GeplaatstMeubel[]
   beschikbareMeubels: Meubel[]
+  kamers?: Kamer[]
   zoom: number
   onRotatieChange?: (graden: number) => void
   onResize?: (breedte: number, hoogte: number) => void
+  onKleurChange?: (kleur: string | undefined) => void
+  onNotitieChange?: (notitie: string | undefined) => void
 }
 
 export default function EigenschappenPaneel({
@@ -15,13 +33,32 @@ export default function EigenschappenPaneel({
   meubel,
   geplaatsteItems,
   beschikbareMeubels,
-  zoom
+  kamers,
+  zoom,
+  onKleurChange,
+  onNotitieChange
 }: EigenschappenPaneelProps) {
+  // Lokale state voor notitie input (voorkomt re-render bij elke toets)
+  const [notitieInput, setNotitieInput] = useState(geselecteerdItem?.notitie ?? '')
+
+  // Sync lokale notitie met geselecteerd item
+  useEffect(() => {
+    setNotitieInput(geselecteerdItem?.notitie ?? '')
+  }, [geselecteerdItem?.id, geselecteerdItem?.notitie])
+
+  // Save notitie bij blur
+  const handleNotitieSave = () => {
+    if (onNotitieChange) {
+      const trimmed = notitieInput.trim()
+      onNotitieChange(trimmed || undefined)
+    }
+  }
 
   // Als een meubel geselecteerd is, toon eigenschappen
   if (geselecteerdItem && meubel) {
     const breedte = geselecteerdItem.customBreedte ?? meubel.breedte
     const hoogte = geselecteerdItem.customHoogte ?? meubel.hoogte
+    const displayKleur = geselecteerdItem.customKleur ?? meubel.kleur
 
     return (
       <div className="bg-white rounded-2xl shadow-lg border border-slate-200/50 p-5 h-fit">
@@ -37,7 +74,7 @@ export default function EigenschappenPaneel({
           <div className="flex items-center gap-3">
             <div
               className="w-10 h-10 rounded-lg shadow-sm"
-              style={{ backgroundColor: meubel.kleur }}
+              style={{ backgroundColor: displayKleur }}
             />
             <div>
               <div className="font-medium text-slate-800">{meubel.naam}</div>
@@ -45,6 +82,48 @@ export default function EigenschappenPaneel({
             </div>
           </div>
         </div>
+
+        {/* Kleur customization */}
+        {onKleurChange && (
+          <div className="mb-4">
+            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Kleur</h3>
+            <div className="flex flex-wrap gap-2">
+              {PRESET_KLEUREN.map(({ naam, kleur }) => (
+                <button
+                  key={naam}
+                  onClick={() => onKleurChange(kleur ?? undefined)}
+                  className={`w-7 h-7 rounded-lg transition-all ${
+                    (kleur === null && !geselecteerdItem.customKleur) ||
+                    kleur === geselecteerdItem.customKleur
+                      ? 'ring-2 ring-blue-500 ring-offset-2'
+                      : 'hover:scale-110'
+                  }`}
+                  style={{ backgroundColor: kleur ?? meubel.kleur }}
+                  title={naam}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Notitie */}
+        {onNotitieChange && (
+          <div className="mb-4">
+            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Notitie</h3>
+            <textarea
+              value={notitieInput}
+              onChange={(e) => setNotitieInput(e.target.value.slice(0, 100))}
+              onBlur={handleNotitieSave}
+              placeholder="Bijv. IKEA KALLAX, van oma..."
+              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              rows={2}
+              maxLength={100}
+            />
+            <div className="text-xs text-slate-400 text-right mt-1">
+              {notitieInput.length}/100
+            </div>
+          </div>
+        )}
 
         {/* Afmetingen */}
         <div className="space-y-3 mb-4">
@@ -142,6 +221,37 @@ export default function EigenschappenPaneel({
                 <span className="text-sm font-medium text-slate-800">{aantal}</span>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Kamer oppervlaktes */}
+      {kamers && kamers.length > 0 && (
+        <div className="mb-4">
+          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Kamers</h3>
+          <div className="space-y-2">
+            {kamers
+              .filter(k => !k.isGemeenschappelijk) // Filter trappenhuis etc.
+              .map(kamer => {
+                const oppervlakte = getKamerOppervlakte(kamer)
+                return (
+                  <div key={kamer.id} className="flex justify-between items-center py-2 border-b border-slate-100">
+                    <span className="text-sm text-slate-600">{kamer.naam}</span>
+                    <span className="text-sm font-medium text-slate-800">{formatOppervlakte(oppervlakte)}</span>
+                  </div>
+                )
+              })}
+            {/* Totaal */}
+            <div className="flex justify-between items-center py-2 pt-3">
+              <span className="text-sm font-semibold text-slate-700">Totaal</span>
+              <span className="text-sm font-bold text-slate-800">
+                {formatOppervlakte(
+                  kamers
+                    .filter(k => !k.isGemeenschappelijk)
+                    .reduce((sum, k) => sum + getKamerOppervlakte(k), 0)
+                )}
+              </span>
+            </div>
           </div>
         </div>
       )}
