@@ -197,10 +197,33 @@ Dit voorkomt dat er bugs worden opgeleverd die pas later ontdekt worden.
 - Animatie via Konva.Tween: spring naar links, roteer 720°, fade out
 - Props: `x`, `y`, `pixelsPerMeter`, `rotatie` (in graden)
 
-### App Versioning
-- Versienummer in `APP_VERSION` constante bovenaan `App.tsx`
-- Weergegeven linksonder in subtle gray (`text-slate-400`)
-- Update bij elke release: MAJOR.MINOR.PATCH (bijv. 1.1.0)
+### App Versioning (VERPLICHT bij elke wijziging!)
+**Bij ELKE code-wijziging die gepusht wordt:**
+1. Update `APP_VERSION` in `src/App.tsx`
+2. Voeg changelog entry toe in `src/data/changelog.ts`
+
+**Versienummering (MAJOR.MINOR.PATCH):**
+- **PATCH (1.6.x → 1.6.1)**: Bugfixes, kleine correcties
+- **MINOR (1.6.x → 1.7.0)**: Nieuwe features, verbeteringen
+- **MAJOR (1.x.x → 2.0.0)**: Breaking changes, grote redesigns
+
+**Changelog entry formaat:**
+```typescript
+{
+  version: '1.6.1',
+  date: 'YYYY-MM-DD',
+  title: 'Korte titel',
+  entries: [
+    { type: 'fix', description: 'Beschrijving van bugfix' },
+    { type: 'feature', description: 'Beschrijving van feature' },
+    { type: 'improvement', description: 'Beschrijving van verbetering' },
+  ]
+}
+```
+
+**Types:** `fix` (bugfix), `feature` (nieuw), `improvement` (beter)
+
+- Versienummer weergegeven in sidebar footer (desktop) en menu (mobile)
 
 ### Deployment Workflow
 - **Lokaal testen**: Maak wijzigingen, test met `npm run dev`

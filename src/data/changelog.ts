@@ -17,6 +17,14 @@ export interface Release {
 
 export const changelog: Release[] = [
   {
+    version: '1.6.1',
+    date: '2026-02-05',
+    title: 'Rotatie Bugfix',
+    entries: [
+      { type: 'fix', description: 'Gedraaide meubels (90°/270°) kunnen nu weer tegen alle muren geplaatst worden' },
+    ]
+  },
+  {
     version: '1.6.0',
     date: '2026-02-05',
     title: 'Verbeteringen & Changelog',
