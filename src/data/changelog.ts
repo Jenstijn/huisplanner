@@ -17,6 +17,15 @@ export interface Release {
 
 export const changelog: Release[] = [
   {
+    version: '1.6.2',
+    date: '2026-02-05',
+    title: 'Verbeterde Rotatie Fix',
+    entries: [
+      { type: 'fix', description: 'Gedraaide meubels kunnen nu tegen alle muren geplaatst worden (elke rotatiehoek)' },
+      { type: 'improvement', description: 'Bounding box berekening werkt nu correct voor elke rotatie, niet alleen 90°/270°' },
+    ]
+  },
+  {
     version: '1.6.1',
     date: '2026-02-05',
     title: 'Rotatie Bugfix',

@@ -18,7 +18,7 @@ import { GeplaatstMeubel, Layout } from './types'
 import { beschikbareMeubels, PIXELS_PER_METER } from './data/appartement'
 
 // App versie - update bij elke release
-const APP_VERSION = '1.6.1'
+const APP_VERSION = '1.6.2'
 
 // Canvas dimensies (moet overeenkomen met Plattegrond.tsx)
 const CANVAS_BREEDTE_M = 9

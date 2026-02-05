@@ -1217,13 +1217,24 @@ export default function Plattegrond({
                 const baseBreedte = item.customBreedte ?? meubel.breedte
                 const baseHoogte = item.customHoogte ?? meubel.hoogte
 
-                // Bij 90° of 270° rotatie worden effectieve breedte en hoogte verwisseld
-                const isRotated90or270 = item.rotatie === 90 || item.rotatie === 270
-                const effectieveBreedte = isRotated90or270 ? baseHoogte : baseBreedte
-                const effectieveHoogte = isRotated90or270 ? baseBreedte : baseHoogte
+                // Bereken effectieve bounding box gebaseerd op rotatie (AABB)
+                // Dit werkt voor elke rotatiehoek, niet alleen 90/270
+                const radians = (item.rotatie * Math.PI) / 180
+                const cos = Math.abs(Math.cos(radians))
+                const sin = Math.abs(Math.sin(radians))
+                const effectieveBreedte = baseBreedte * cos + baseHoogte * sin
+                const effectieveHoogte = baseBreedte * sin + baseHoogte * cos
+
+                // Bereken offset voor center positie (verschil tussen AABB en originele dimensies)
+                const offsetX = (effectieveBreedte - baseBreedte) / 2
+                const offsetY = (effectieveHoogte - baseHoogte) / 2
+
+                // Pas raw positie aan voor de AABB offset
+                const adjustedX = rawX - offsetX
+                const adjustedY = rawY - offsetY
 
                 // 1. Eerst: harde grenzen (buitenmuren) - gebruik effectieve dimensies
-                const bounded = constrainToBounds(rawX, rawY, effectieveBreedte, effectieveHoogte, buitenGrenzen)
+                const bounded = constrainToBounds(adjustedX, adjustedY, effectieveBreedte, effectieveHoogte, buitenGrenzen)
 
                 // 2. Dan: magnetische snap naar muren
                 let finalX = bounded.x
@@ -1250,10 +1261,14 @@ export default function Plattegrond({
                   }
                 }
 
+                // Converteer bounded positie terug naar originele coordinaten systeem
+                const resultX = finalX + offsetX
+                const resultY = finalY + offsetY
+
                 // Update visuele positie direct (magnetisch effect)
-                // Compenseer voor offset bij het zetten van positie
-                e.target.x(finalX * PIXELS_PER_METER + OFFSET_X + width / 2)
-                e.target.y(finalY * PIXELS_PER_METER + OFFSET_Y + height / 2)
+                // Gebruik originele width/height voor Konva positioning
+                e.target.x(resultX * PIXELS_PER_METER + OFFSET_X + width / 2)
+                e.target.y(resultY * PIXELS_PER_METER + OFFSET_Y + height / 2)
               }}
               onDragEnd={(e) => {
                 // Opslaan van finale positie - compenseer voor offset
