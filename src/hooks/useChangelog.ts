@@ -18,11 +18,8 @@ export function useChangelog(currentVersion: string) {
 
     if (lastSeenVersion !== currentVersion) {
       setHasNewVersion(true)
-      // Auto-show changelog alleen als gebruiker al eerder de app heeft gebruikt
-      // (lastSeenVersion bestaat), niet bij allereerste bezoek
-      if (lastSeenVersion) {
-        setShowChangelog(true)
-      }
+      // Toon changelog altijd bij nieuwe versie (ook bij eerste bezoek)
+      setShowChangelog(true)
     }
   }, [currentVersion])
 
