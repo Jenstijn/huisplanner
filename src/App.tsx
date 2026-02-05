@@ -565,11 +565,16 @@ function DesktopAppContent({
   // Kleur wijzigen
   const handleKleurChange = (kleur: string | undefined) => {
     if (geselecteerdItemId) {
-      const updatedItems = geplaatsteItems.map(item =>
-        item.id === geselecteerdItemId
-          ? { ...item, customKleur: kleur }
-          : item
-      )
+      const updatedItems = geplaatsteItems.map(item => {
+        if (item.id !== geselecteerdItemId) return item
+        const updated = { ...item }
+        if (kleur) {
+          updated.customKleur = kleur
+        } else {
+          delete updated.customKleur
+        }
+        return updated
+      })
       saveItemsWithHistory(updatedItems)
     }
   }
@@ -577,11 +582,16 @@ function DesktopAppContent({
   // Notitie wijzigen
   const handleNotitieChange = (notitie: string | undefined) => {
     if (geselecteerdItemId) {
-      const updatedItems = geplaatsteItems.map(item =>
-        item.id === geselecteerdItemId
-          ? { ...item, notitie: notitie }
-          : item
-      )
+      const updatedItems = geplaatsteItems.map(item => {
+        if (item.id !== geselecteerdItemId) return item
+        const updated = { ...item }
+        if (notitie) {
+          updated.notitie = notitie
+        } else {
+          delete updated.notitie
+        }
+        return updated
+      })
       saveItemsWithHistory(updatedItems)
     }
   }
