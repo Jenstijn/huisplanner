@@ -34,6 +34,10 @@ function App() {
   const [zoom, setZoom] = useState<number | null>(null)
   const [stagePosition, setStagePosition] = useState({ x: 0, y: 0 })
 
+  // State voor lineaal/meet modus
+  const [lineaalModus, setLineaalModus] = useState(false)
+  const [meetResultaat, setMeetResultaat] = useState<{ afstand: number; van: {x: number, y: number}; naar: {x: number, y: number} } | null>(null)
+
   // Bereken initiële zoom zodat hele plattegrond past
   useEffect(() => {
     if (zoom !== null) return // Al geïnitialiseerd
@@ -62,6 +66,19 @@ function App() {
     requestAnimationFrame(calculateInitialZoom)
   }, [zoom])
 
+  // Lineaal toggle handler
+  const handleLineaalToggle = () => {
+    setLineaalModus(!lineaalModus)
+    if (lineaalModus) {
+      // Bij uitschakelen, wis meetresultaat
+      setMeetResultaat(null)
+    } else {
+      // Bij inschakelen, deselect meubels en reset plaatsingsmodus
+      setGeselecteerdItemId(null)
+      setTePlaatsenMeubelId(null)
+    }
+  }
+
   // Zoom handlers
   const handleZoomIn = () => setZoom(z => Math.min((z ?? 1) * 1.2, 3))
   const handleZoomOut = () => setZoom(z => Math.max((z ?? 1) / 1.2, 0.3))
@@ -83,6 +100,9 @@ function App() {
 
   // Nieuw meubel plaatsen op de plattegrond
   const handleStageClick = (x: number, y: number) => {
+    // In lineaal modus, geen meubel plaatsen
+    if (lineaalModus) return
+
     if (tePlaatsenMeubelId) {
       const meubel = beschikbareMeubels.find(m => m.id === tePlaatsenMeubelId)
       if (meubel) {
@@ -305,13 +325,20 @@ function App() {
                 stagePosition={stagePosition}
                 onZoomChange={setZoom}
                 onStageMove={setStagePosition}
+                lineaalModus={lineaalModus}
+                onMeetResultaat={setMeetResultaat}
               />
               )}
               </div>
 
               {/* Instructie hint */}
               <div className="text-center text-sm text-slate-500 py-2 flex-shrink-0">
-                {tePlaatsenMeubelId ? (
+                {lineaalModus ? (
+                  <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-orange-50 text-orange-700 rounded-full text-xs">
+                    <span className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span>
+                    Klik en sleep om af te meten
+                  </span>
+                ) : tePlaatsenMeubelId ? (
                   <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-50 text-blue-700 rounded-full text-xs">
                     <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
                     Klik op de plattegrond om het meubel te plaatsen
@@ -350,6 +377,48 @@ function App() {
         onZoomOut={handleZoomOut}
         onZoomReset={handleZoomReset}
       />
+
+      {/* Lineaal Tool Button */}
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3">
+        <button
+          onClick={handleLineaalToggle}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-full shadow-lg transition-all ${
+            lineaalModus
+              ? 'bg-orange-500 text-white shadow-orange-500/30'
+              : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
+          }`}
+          title={lineaalModus ? 'Lineaal uitschakelen (Escape)' : 'Afstand meten'}
+        >
+          {/* Lineaal icoon */}
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+          </svg>
+          <span className="text-sm font-medium">
+            {lineaalModus ? 'Meten actief' : 'Meten'}
+          </span>
+        </button>
+
+        {/* Meetresultaat display */}
+        {meetResultaat && (
+          <div className="flex items-center gap-2 px-4 py-2.5 bg-orange-50 border border-orange-200 rounded-full shadow-lg">
+            <span className="text-orange-600 font-semibold text-lg">
+              {meetResultaat.afstand.toFixed(2)} m
+            </span>
+            <span className="text-orange-500 text-sm">
+              ({(meetResultaat.afstand * 100).toFixed(0)} cm)
+            </span>
+            <button
+              onClick={() => setMeetResultaat(null)}
+              className="ml-1 text-orange-400 hover:text-orange-600 transition-colors"
+              title="Wis meting"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

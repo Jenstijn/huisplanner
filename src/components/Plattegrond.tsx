@@ -24,6 +24,9 @@ interface PlattegrondProps {
   stagePosition?: { x: number; y: number }
   onZoomChange?: (zoom: number) => void
   onStageMove?: (pos: { x: number; y: number }) => void
+  // Lineaal props
+  lineaalModus?: boolean
+  onMeetResultaat?: (resultaat: { afstand: number; van: {x: number, y: number}; naar: {x: number, y: number} } | null) => void
 }
 
 // Offset om ruimte te maken voor labels en padding
@@ -531,11 +534,18 @@ export default function Plattegrond({
   zoom = 1,
   stagePosition = { x: 0, y: 0 },
   onZoomChange,
-  onStageMove
+  onStageMove,
+  lineaalModus = false,
+  onMeetResultaat
 }: PlattegrondProps) {
   const canvasBreedte = 9 * PIXELS_PER_METER + OFFSET_X * 2
   const canvasHoogte = 12.5 * PIXELS_PER_METER + OFFSET_Y * 2
   const [isDraggingOver, setIsDraggingOver] = useState(false)
+
+  // State voor lineaal meting (lokaal voor live preview)
+  const [meetStart, setMeetStart] = useState<{ x: number; y: number } | null>(null)
+  const [meetEind, setMeetEind] = useState<{ x: number; y: number } | null>(null)
+  const [isMeting, setIsMeting] = useState(false)
 
   // Lokale state voor live resize preview (voorkomt state thrashing)
   const [resizePreview, setResizePreview] = useState<{
@@ -581,7 +591,65 @@ export default function Plattegrond({
     onStageMove?.(newPos)
   }
 
+  // Helper functie om muis positie naar meters te converteren
+  const getPositionInMeters = (e: KonvaEventObject<MouseEvent | globalThis.MouseEvent>): { x: number; y: number } | null => {
+    const stage = e.target.getStage()
+    if (!stage) return null
+    const pos = stage.getPointerPosition()
+    if (!pos) return null
+    return {
+      x: ((pos.x - stagePosition.x) / zoom - OFFSET_X) / PIXELS_PER_METER,
+      y: ((pos.y - stagePosition.y) / zoom - OFFSET_Y) / PIXELS_PER_METER
+    }
+  }
+
+  // Lineaal mouse handlers
+  const handleLineaalMouseDown = (e: KonvaEventObject<MouseEvent>) => {
+    if (!lineaalModus) return
+    const pos = getPositionInMeters(e)
+    if (pos) {
+      setMeetStart(pos)
+      setMeetEind(pos)
+      setIsMeting(true)
+    }
+  }
+
+  const handleLineaalMouseMove = (e: KonvaEventObject<MouseEvent>) => {
+    if (!lineaalModus || !isMeting || !meetStart) return
+    const pos = getPositionInMeters(e)
+    if (pos) {
+      setMeetEind(pos)
+    }
+  }
+
+  const handleLineaalMouseUp = () => {
+    if (!lineaalModus || !isMeting || !meetStart || !meetEind) {
+      setIsMeting(false)
+      return
+    }
+
+    // Bereken afstand
+    const dx = meetEind.x - meetStart.x
+    const dy = meetEind.y - meetStart.y
+    const afstand = Math.sqrt(dx * dx + dy * dy)
+
+    // Alleen rapporteren als er daadwerkelijk gemeten is (> 5cm)
+    if (afstand > 0.05 && onMeetResultaat) {
+      onMeetResultaat({
+        afstand,
+        van: meetStart,
+        naar: meetEind
+      })
+    }
+
+    setIsMeting(false)
+    // Behoud de lijn voor visualisatie tot nieuwe meting begint
+  }
+
   const handleStageClick = (e: KonvaEventObject<MouseEvent>) => {
+    // In lineaal modus, geen normale click handling
+    if (lineaalModus) return
+
     const targetName = e.target.name()
     if (targetName === 'meubel' || targetName === 'meubel-text' || targetName === 'resize-handle') {
       return
@@ -645,9 +713,13 @@ export default function Plattegrond({
       scaleY={zoom}
       x={stagePosition.x}
       y={stagePosition.y}
-      draggable={zoom > 1}
+      draggable={zoom > 1 && !lineaalModus}
       onClick={handleStageClick}
       onWheel={handleWheel}
+      onMouseDown={handleLineaalMouseDown}
+      onMouseMove={handleLineaalMouseMove}
+      onMouseUp={handleLineaalMouseUp}
+      onMouseLeave={handleLineaalMouseUp}
       onDragEnd={(e) => {
         // Update stage positie na panning
         const stage = e.target.getStage()
@@ -658,7 +730,8 @@ export default function Plattegrond({
       style={{
         backgroundColor: '#fafafa',
         borderRadius: '12px',
-        boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)'
+        boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)',
+        cursor: lineaalModus ? 'crosshair' : 'default'
       }}
     >
       <Layer>
@@ -1083,6 +1156,85 @@ export default function Plattegrond({
           <Rect width={PIXELS_PER_METER} height={4} fill="#404040" cornerRadius={2} />
           <Text y={8} text="1 meter" fontSize={10} fontFamily="Inter, system-ui, sans-serif" fill="#606060" />
         </Group>
+
+        {/* Lineaal meetlijn */}
+        {lineaalModus && meetStart && meetEind && (
+          <Group>
+            {/* Hoofdlijn */}
+            <Line
+              points={[
+                meetStart.x * PIXELS_PER_METER + OFFSET_X,
+                meetStart.y * PIXELS_PER_METER + OFFSET_Y,
+                meetEind.x * PIXELS_PER_METER + OFFSET_X,
+                meetEind.y * PIXELS_PER_METER + OFFSET_Y
+              ]}
+              stroke="#f97316"
+              strokeWidth={3}
+              lineCap="round"
+              dash={isMeting ? [8, 4] : undefined}
+            />
+            {/* Startpunt */}
+            <Circle
+              x={meetStart.x * PIXELS_PER_METER + OFFSET_X}
+              y={meetStart.y * PIXELS_PER_METER + OFFSET_Y}
+              radius={6}
+              fill="#f97316"
+              stroke="#ffffff"
+              strokeWidth={2}
+            />
+            {/* Eindpunt */}
+            <Circle
+              x={meetEind.x * PIXELS_PER_METER + OFFSET_X}
+              y={meetEind.y * PIXELS_PER_METER + OFFSET_Y}
+              radius={6}
+              fill="#f97316"
+              stroke="#ffffff"
+              strokeWidth={2}
+            />
+            {/* Afstand label bij de lijn */}
+            {(() => {
+              const dx = meetEind.x - meetStart.x
+              const dy = meetEind.y - meetStart.y
+              const afstand = Math.sqrt(dx * dx + dy * dy)
+              const midX = (meetStart.x + meetEind.x) / 2 * PIXELS_PER_METER + OFFSET_X
+              const midY = (meetStart.y + meetEind.y) / 2 * PIXELS_PER_METER + OFFSET_Y
+              // Offset label omhoog of naar links afhankelijk van lijnrichting
+              const angle = Math.atan2(dy, dx)
+              const offsetDist = 20
+              const labelX = midX - Math.sin(angle) * offsetDist
+              const labelY = midY + Math.cos(angle) * offsetDist
+
+              if (afstand < 0.05) return null
+
+              return (
+                <Group x={labelX} y={labelY}>
+                  <Rect
+                    x={-30}
+                    y={-12}
+                    width={60}
+                    height={24}
+                    fill="#f97316"
+                    cornerRadius={4}
+                    shadowColor="rgba(0,0,0,0.2)"
+                    shadowBlur={4}
+                    shadowOffsetY={2}
+                  />
+                  <Text
+                    x={-30}
+                    y={-8}
+                    width={60}
+                    text={`${afstand.toFixed(2)}m`}
+                    fontSize={12}
+                    fontFamily="Inter, system-ui, sans-serif"
+                    fontStyle="bold"
+                    fill="#ffffff"
+                    align="center"
+                  />
+                </Group>
+              )
+            })()}
+          </Group>
+        )}
       </Layer>
     </Stage>
     </div>
