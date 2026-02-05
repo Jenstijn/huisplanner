@@ -11,6 +11,9 @@ import { usePlattegrond } from './hooks/usePlattegrond'
 import { GeplaatstMeubel } from './types'
 import { beschikbareMeubels, PIXELS_PER_METER } from './data/appartement'
 
+// App versie - update bij elke release
+const APP_VERSION = '1.1.0'
+
 // Canvas dimensies (moet overeenkomen met Plattegrond.tsx)
 const CANVAS_BREEDTE_M = 9
 const CANVAS_HOOGTE_M = 12.5
@@ -529,6 +532,11 @@ function AppContent() {
             </button>
           </div>
         )}
+      </div>
+
+      {/* Versienummer */}
+      <div className="fixed bottom-2 left-2 text-xs text-slate-400 z-10">
+        v{APP_VERSION}
       </div>
     </div>
   )
