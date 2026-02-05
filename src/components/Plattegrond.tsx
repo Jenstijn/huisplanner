@@ -9,7 +9,7 @@ import {
 } from '../data/appartement'
 import { GeplaatstMeubel, Kamer, Muur } from '../types'
 import { KonvaEventObject } from 'konva/lib/Node'
-import { snapToWalls, snapStoelToTafel } from '../utils/snapLogic'
+import { snapToWalls, snapStoelToTafel, getBuitenGrenzen, constrainToBounds } from '../utils/snapLogic'
 
 interface PlattegrondProps {
   geplaatsteItems: GeplaatstMeubel[]
@@ -18,6 +18,12 @@ interface PlattegrondProps {
   onItemMove: (id: string, x: number, y: number) => void
   onStageClick: (x: number, y: number) => void
   onDrop?: (meubelId: string, x: number, y: number, customBreedte?: number, customHoogte?: number) => void
+  onItemResize?: (id: string, breedte: number, hoogte: number) => void
+  // Zoom props
+  zoom?: number
+  stagePosition?: { x: number; y: number }
+  onZoomChange?: (zoom: number) => void
+  onStageMove?: (pos: { x: number; y: number }) => void
 }
 
 // Offset om ruimte te maken voor labels en padding
@@ -370,11 +376,124 @@ const renderDressoir = ({ width, height, isSelected }: MeubelRenderProps) => (
   </Group>
 )
 
+// Chaise Longue Links: bank met verlengd ligdeel aan linkerkant
+// Het ligdeel steekt NAAR VOREN uit (grotere diepte), niet opzij
+const renderChaiseLongueLinks = ({ width, height, isSelected }: MeubelRenderProps) => (
+  <Group>
+    {/* Basis zitgedeelte (volledige breedte, bovenste 55%) */}
+    <Rect
+      x={0}
+      y={0}
+      width={width}
+      height={height * 0.55}
+      fill="#7a9a50"
+      stroke={isSelected ? '#3b82f6' : '#5a7a30'}
+      strokeWidth={isSelected ? 2 : 1}
+      cornerRadius={4}
+    />
+    {/* Verlengd ligdeel links (steekt naar voren uit) */}
+    <Rect
+      x={0}
+      y={height * 0.55}
+      width={width * 0.45}
+      height={height * 0.45}
+      fill="#7a9a50"
+      stroke={isSelected ? '#3b82f6' : '#5a7a30'}
+      strokeWidth={isSelected ? 2 : 1}
+      cornerRadius={4}
+    />
+    {/* Rugleuning (bovenaan het zitgedeelte) */}
+    <Rect
+      x={2}
+      y={2}
+      width={width - 4}
+      height={height * 0.12}
+      fill="#6a8a40"
+      cornerRadius={2}
+    />
+    {/* Kussen zitdeel */}
+    <Rect
+      x={width * 0.47}
+      y={height * 0.16}
+      width={width * 0.50}
+      height={height * 0.35}
+      fill="#8aaa60"
+      cornerRadius={3}
+    />
+    {/* Kussen ligdeel */}
+    <Rect
+      x={4}
+      y={height * 0.16}
+      width={width * 0.40}
+      height={height * 0.80}
+      fill="#8aaa60"
+      cornerRadius={3}
+    />
+  </Group>
+)
+
+// Chaise Longue Rechts: bank met verlengd ligdeel aan rechterkant
+const renderChaiseLongueRechts = ({ width, height, isSelected }: MeubelRenderProps) => (
+  <Group>
+    {/* Basis zitgedeelte (volledige breedte, bovenste 55%) */}
+    <Rect
+      x={0}
+      y={0}
+      width={width}
+      height={height * 0.55}
+      fill="#7a9a50"
+      stroke={isSelected ? '#3b82f6' : '#5a7a30'}
+      strokeWidth={isSelected ? 2 : 1}
+      cornerRadius={4}
+    />
+    {/* Verlengd ligdeel rechts (steekt naar voren uit) */}
+    <Rect
+      x={width * 0.55}
+      y={height * 0.55}
+      width={width * 0.45}
+      height={height * 0.45}
+      fill="#7a9a50"
+      stroke={isSelected ? '#3b82f6' : '#5a7a30'}
+      strokeWidth={isSelected ? 2 : 1}
+      cornerRadius={4}
+    />
+    {/* Rugleuning (bovenaan het zitgedeelte) */}
+    <Rect
+      x={2}
+      y={2}
+      width={width - 4}
+      height={height * 0.12}
+      fill="#6a8a40"
+      cornerRadius={2}
+    />
+    {/* Kussen zitdeel */}
+    <Rect
+      x={4}
+      y={height * 0.16}
+      width={width * 0.50}
+      height={height * 0.35}
+      fill="#8aaa60"
+      cornerRadius={3}
+    />
+    {/* Kussen ligdeel */}
+    <Rect
+      x={width * 0.57}
+      y={height * 0.16}
+      width={width * 0.40}
+      height={height * 0.80}
+      fill="#8aaa60"
+      cornerRadius={3}
+    />
+  </Group>
+)
+
 // Map icoon naar render functie
 const meubelRenderers: Record<string, (props: MeubelRenderProps) => JSX.Element> = {
   'bank': renderBank,
   'hoekbank': renderHoekbank,
   'fauteuil': renderFauteuil,
+  'chaise-longue-links': renderChaiseLongueLinks,
+  'chaise-longue-rechts': renderChaiseLongueRechts,
   'salontafel': renderSalontafel,
   'salontafel-rond': renderSalontafelRond,
   'eettafel': renderEettafel,
@@ -407,15 +526,64 @@ export default function Plattegrond({
   onItemSelect,
   onItemMove,
   onStageClick,
-  onDrop
+  onDrop,
+  onItemResize,
+  zoom = 1,
+  stagePosition = { x: 0, y: 0 },
+  onZoomChange,
+  onStageMove
 }: PlattegrondProps) {
   const canvasBreedte = 9 * PIXELS_PER_METER + OFFSET_X * 2
   const canvasHoogte = 12.5 * PIXELS_PER_METER + OFFSET_Y * 2
   const [isDraggingOver, setIsDraggingOver] = useState(false)
 
+  // Lokale state voor live resize preview (voorkomt state thrashing)
+  const [resizePreview, setResizePreview] = useState<{
+    id: string
+    width: number
+    height: number
+  } | null>(null)
+
+  // Bereken buitengrenzen één keer
+  const buitenGrenzen = getBuitenGrenzen(muren)
+
+  // Wheel/trackpad zoom handler
+  const handleWheel = (e: KonvaEventObject<WheelEvent>) => {
+    e.evt.preventDefault()
+
+    const stage = e.target.getStage()
+    if (!stage) return
+
+    const oldScale = zoom
+    const pointer = stage.getPointerPosition()
+    if (!pointer) return
+
+    // Zoom naar cursor positie
+    const mousePointTo = {
+      x: (pointer.x - stagePosition.x) / oldScale,
+      y: (pointer.y - stagePosition.y) / oldScale,
+    }
+
+    // Richting bepalen (werkt voor trackpad pinch en mouse wheel)
+    // deltaY > 0 = scroll down / pinch out = zoom out
+    // deltaY < 0 = scroll up / pinch in = zoom in
+    const direction = e.evt.deltaY > 0 ? -1 : 1
+    const scaleBy = 1.1
+    const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy
+    const clampedScale = Math.max(0.3, Math.min(3, newScale))
+
+    const newPos = {
+      x: pointer.x - mousePointTo.x * clampedScale,
+      y: pointer.y - mousePointTo.y * clampedScale,
+    }
+
+    onZoomChange?.(clampedScale)
+    onStageMove?.(newPos)
+  }
+
   const handleStageClick = (e: KonvaEventObject<MouseEvent>) => {
     const targetName = e.target.name()
-    if (targetName === 'meubel' || targetName === 'meubel-text') {
+    if (targetName === 'meubel' || targetName === 'meubel-text' || targetName === 'resize-handle') {
       return
     }
 
@@ -423,8 +591,9 @@ export default function Plattegrond({
     if (stage) {
       const pos = stage.getPointerPosition()
       if (pos) {
-        const meterX = (pos.x - OFFSET_X) / PIXELS_PER_METER
-        const meterY = (pos.y - OFFSET_Y) / PIXELS_PER_METER
+        // Corrigeer voor zoom en pan
+        const meterX = ((pos.x - stagePosition.x) / zoom - OFFSET_X) / PIXELS_PER_METER
+        const meterY = ((pos.y - stagePosition.y) / zoom - OFFSET_Y) / PIXELS_PER_METER
         onStageClick(meterX, meterY)
       }
     }
@@ -450,10 +619,10 @@ export default function Plattegrond({
     try {
       const data = JSON.parse(e.dataTransfer.getData('application/json'))
       if (data.meubelId) {
-        // Bereken positie relatief aan de canvas
+        // Bereken positie relatief aan de canvas, met zoom correctie
         const rect = e.currentTarget.getBoundingClientRect()
-        const x = (e.clientX - rect.left - OFFSET_X) / PIXELS_PER_METER
-        const y = (e.clientY - rect.top - OFFSET_Y) / PIXELS_PER_METER
+        const x = ((e.clientX - rect.left - stagePosition.x) / zoom - OFFSET_X) / PIXELS_PER_METER
+        const y = ((e.clientY - rect.top - stagePosition.y) / zoom - OFFSET_Y) / PIXELS_PER_METER
 
         onDrop(data.meubelId, x, y, data.breedte, data.hoogte)
       }
@@ -472,7 +641,20 @@ export default function Plattegrond({
     <Stage
       width={canvasBreedte}
       height={canvasHoogte}
+      scaleX={zoom}
+      scaleY={zoom}
+      x={stagePosition.x}
+      y={stagePosition.y}
+      draggable={zoom > 1}
       onClick={handleStageClick}
+      onWheel={handleWheel}
+      onDragEnd={(e) => {
+        // Update stage positie na panning
+        const stage = e.target.getStage()
+        if (stage && onStageMove) {
+          onStageMove({ x: stage.x(), y: stage.y() })
+        }
+      }}
       style={{
         backgroundColor: '#fafafa',
         borderRadius: '12px',
@@ -726,17 +908,23 @@ export default function Plattegrond({
           if (!meubel) return null
 
           const isGeselecteerd = item.id === geselecteerdItem
-          // Gebruik custom afmetingen indien aanwezig, anders standaard
-          const width = (item.customBreedte ?? meubel.breedte) * PIXELS_PER_METER
-          const height = (item.customHoogte ?? meubel.hoogte) * PIXELS_PER_METER
+
+          // Gebruik resizePreview voor live preview, anders custom/standaard afmetingen
+          const baseWidth = item.customBreedte ?? meubel.breedte
+          const baseHeight = item.customHoogte ?? meubel.hoogte
+          const width = (resizePreview?.id === item.id ? resizePreview.width : baseWidth) * PIXELS_PER_METER
+          const height = (resizePreview?.id === item.id ? resizePreview.height : baseHeight) * PIXELS_PER_METER
 
           const renderer = meubel.icoon ? meubelRenderers[meubel.icoon] : null
 
           return (
             <Group
               key={item.id}
-              x={item.x * PIXELS_PER_METER + OFFSET_X}
-              y={item.y * PIXELS_PER_METER + OFFSET_Y}
+              // Center-point rotatie: offset naar centrum + compensatie in x/y
+              x={item.x * PIXELS_PER_METER + OFFSET_X + width / 2}
+              y={item.y * PIXELS_PER_METER + OFFSET_Y + height / 2}
+              offsetX={width / 2}
+              offsetY={height / 2}
               rotation={item.rotatie}
               draggable
               name="meubel"
@@ -744,39 +932,53 @@ export default function Plattegrond({
                 e.cancelBubble = true  // Stop event propagation naar Stage
                 onItemSelect(item.id)
               }}
-              onDragEnd={(e) => {
-                const rawX = (e.target.x() - OFFSET_X) / PIXELS_PER_METER
-                const rawY = (e.target.y() - OFFSET_Y) / PIXELS_PER_METER
+              onDragMove={(e) => {
+                // Magnetische snap tijdens slepen
+                // Compenseer voor offset bij positie berekening
+                const rawX = (e.target.x() - OFFSET_X - width / 2) / PIXELS_PER_METER
+                const rawY = (e.target.y() - OFFSET_Y - height / 2) / PIXELS_PER_METER
 
-                // Haal meubel afmetingen op
                 const breedte = item.customBreedte ?? meubel.breedte
                 const hoogte = item.customHoogte ?? meubel.hoogte
 
-                // Check eerst voor stoel-naar-tafel snap (alleen voor eetkamerstoelen)
+                // 1. Eerst: harde grenzen (buitenmuren)
+                const bounded = constrainToBounds(rawX, rawY, breedte, hoogte, buitenGrenzen)
+
+                // 2. Dan: magnetische snap naar muren
+                let finalX = bounded.x
+                let finalY = bounded.y
+
+                // Check eerst voor stoel-naar-tafel snap
                 if (item.meubelId === 'eetkamerstoel') {
                   const tafelSnap = snapStoelToTafel(
-                    rawX, rawY, breedte, hoogte,
+                    bounded.x, bounded.y, breedte, hoogte,
                     geplaatsteItems, beschikbareMeubels
                   )
                   if (tafelSnap.snapped) {
-                    // Update positie in pixels voor visuele feedback
-                    e.target.x(tafelSnap.x * PIXELS_PER_METER + OFFSET_X)
-                    e.target.y(tafelSnap.y * PIXELS_PER_METER + OFFSET_Y)
-                    onItemMove(item.id, tafelSnap.x, tafelSnap.y)
-                    return
+                    finalX = tafelSnap.x
+                    finalY = tafelSnap.y
                   }
                 }
 
                 // Anders: probeer snap naar muren
-                const wallSnap = snapToWalls(rawX, rawY, breedte, hoogte, muren)
-                if (wallSnap.snapped) {
-                  // Update positie in pixels voor visuele feedback
-                  e.target.x(wallSnap.x * PIXELS_PER_METER + OFFSET_X)
-                  e.target.y(wallSnap.y * PIXELS_PER_METER + OFFSET_Y)
-                  onItemMove(item.id, wallSnap.x, wallSnap.y)
-                } else {
-                  onItemMove(item.id, rawX, rawY)
+                if (finalX === bounded.x && finalY === bounded.y) {
+                  const wallSnap = snapToWalls(bounded.x, bounded.y, breedte, hoogte, muren)
+                  if (wallSnap.snapped) {
+                    finalX = wallSnap.x
+                    finalY = wallSnap.y
+                  }
                 }
+
+                // Update visuele positie direct (magnetisch effect)
+                // Compenseer voor offset bij het zetten van positie
+                e.target.x(finalX * PIXELS_PER_METER + OFFSET_X + width / 2)
+                e.target.y(finalY * PIXELS_PER_METER + OFFSET_Y + height / 2)
+              }}
+              onDragEnd={(e) => {
+                // Opslaan van finale positie - compenseer voor offset
+                const finalX = (e.target.x() - OFFSET_X - width / 2) / PIXELS_PER_METER
+                const finalY = (e.target.y() - OFFSET_Y - height / 2) / PIXELS_PER_METER
+                onItemMove(item.id, finalX, finalY)
               }}
             >
               {renderer
@@ -785,16 +987,92 @@ export default function Plattegrond({
               }
               {/* Selectie indicator */}
               {isGeselecteerd && (
-                <Rect
-                  width={width}
-                  height={height}
-                  stroke="#3b82f6"
-                  strokeWidth={2}
-                  cornerRadius={4}
-                  shadowColor="#3b82f6"
-                  shadowBlur={12}
-                  shadowOpacity={0.4}
-                />
+                <>
+                  <Rect
+                    width={width}
+                    height={height}
+                    stroke="#3b82f6"
+                    strokeWidth={2}
+                    cornerRadius={4}
+                    shadowColor="#3b82f6"
+                    shadowBlur={12}
+                    shadowOpacity={0.4}
+                  />
+                  {/* Resize handle rechtsonder */}
+                  <Rect
+                    x={width - 10}
+                    y={height - 10}
+                    width={14}
+                    height={14}
+                    fill="#3b82f6"
+                    stroke="#ffffff"
+                    strokeWidth={2}
+                    cornerRadius={3}
+                    name="resize-handle"
+                    draggable
+                    onDragStart={(e) => {
+                      // Stop propagation zodat het meubel niet mee verplaatst
+                      e.cancelBubble = true
+                    }}
+                    onDragMove={(e) => {
+                      e.cancelBubble = true
+                      // Bereken nieuwe afmetingen gebaseerd op drag positie
+                      const node = e.target
+                      const newWidth = Math.max(15, node.x() + 10) / PIXELS_PER_METER
+                      const newHeight = Math.max(15, node.y() + 10) / PIXELS_PER_METER
+
+                      // Clamp naar meubel grenzen
+                      const minBreedte = meubel.minBreedte ?? 0.3
+                      const maxBreedte = meubel.maxBreedte ?? 10
+                      const minHoogte = meubel.minHoogte ?? 0.3
+                      const maxHoogte = meubel.maxHoogte ?? 10
+
+                      const clampedWidth = Math.max(minBreedte, Math.min(maxBreedte, newWidth))
+                      const clampedHeight = Math.max(minHoogte, Math.min(maxHoogte, newHeight))
+
+                      // Update LOKALE preview state voor live resize
+                      setResizePreview({
+                        id: item.id,
+                        width: clampedWidth,
+                        height: clampedHeight
+                      })
+
+                      // Reset handle positie naar geclampte waarden
+                      node.x(clampedWidth * PIXELS_PER_METER - 10)
+                      node.y(clampedHeight * PIXELS_PER_METER - 10)
+                    }}
+                    onDragEnd={(e) => {
+                      e.cancelBubble = true
+
+                      // Sync naar parent state met preview waarden
+                      if (resizePreview && onItemResize) {
+                        onItemResize(resizePreview.id, resizePreview.width, resizePreview.height)
+                      }
+
+                      // Clear preview state
+                      setResizePreview(null)
+                    }}
+                    onMouseEnter={(e) => {
+                      const stage = e.target.getStage()
+                      if (stage) {
+                        stage.container().style.cursor = 'nwse-resize'
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      const stage = e.target.getStage()
+                      if (stage) {
+                        stage.container().style.cursor = 'default'
+                      }
+                    }}
+                  />
+                  {/* Resize indicator hoekjes */}
+                  <Line
+                    points={[width - 8, height - 2, width - 2, height - 2, width - 2, height - 8]}
+                    stroke="#3b82f6"
+                    strokeWidth={2}
+                    lineCap="round"
+                  />
+                </>
               )}
             </Group>
           )

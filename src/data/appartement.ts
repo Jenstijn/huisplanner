@@ -856,7 +856,12 @@ export const beschikbareMeubels: Meubel[] = [
       { label: '2-zits (180cm)', breedte: 1.8, hoogte: 0.9 },
       { label: '3-zits (220cm)', breedte: 2.2, hoogte: 0.9 },
       { label: '4-zits (260cm)', breedte: 2.6, hoogte: 0.9 },
-    ]
+    ],
+    handmatigeAfmetingen: true,
+    minBreedte: 1.0,
+    maxBreedte: 4.0,
+    minHoogte: 0.6,
+    maxHoogte: 1.5
   },
   {
     id: 'hoekbank',
@@ -869,7 +874,12 @@ export const beschikbareMeubels: Meubel[] = [
     beschikbareAfmetingen: [
       { label: 'Klein (240x200)', breedte: 2.4, hoogte: 2.0 },
       { label: 'Groot (280x220)', breedte: 2.8, hoogte: 2.2 },
-    ]
+    ],
+    handmatigeAfmetingen: true,
+    minBreedte: 2.0,
+    maxBreedte: 4.0,
+    minHoogte: 1.5,
+    maxHoogte: 3.0
   },
   {
     id: 'fauteuil',
@@ -878,7 +888,50 @@ export const beschikbareMeubels: Meubel[] = [
     hoogte: 0.9,
     kleur: '#8b7355',
     icoon: 'fauteuil',
-    categorie: 'woonkamer'
+    categorie: 'woonkamer',
+    handmatigeAfmetingen: true,
+    minBreedte: 0.6,
+    maxBreedte: 1.2,
+    minHoogte: 0.6,
+    maxHoogte: 1.2
+  },
+  {
+    id: 'chaise-longue-links',
+    naam: 'Chaise Longue (Links)',
+    breedte: 2.0,
+    hoogte: 0.9,
+    kleur: '#7a9a50',
+    icoon: 'chaise-longue-links',
+    categorie: 'woonkamer',
+    beschikbareAfmetingen: [
+      { label: 'Compact (180x85)', breedte: 1.8, hoogte: 0.85 },
+      { label: 'Standaard (200x90)', breedte: 2.0, hoogte: 0.9 },
+      { label: 'Groot (220x95)', breedte: 2.2, hoogte: 0.95 },
+    ],
+    handmatigeAfmetingen: true,
+    minBreedte: 1.5,
+    maxBreedte: 2.5,
+    minHoogte: 0.7,
+    maxHoogte: 1.1
+  },
+  {
+    id: 'chaise-longue-rechts',
+    naam: 'Chaise Longue (Rechts)',
+    breedte: 2.0,
+    hoogte: 0.9,
+    kleur: '#7a9a50',
+    icoon: 'chaise-longue-rechts',
+    categorie: 'woonkamer',
+    beschikbareAfmetingen: [
+      { label: 'Compact (180x85)', breedte: 1.8, hoogte: 0.85 },
+      { label: 'Standaard (200x90)', breedte: 2.0, hoogte: 0.9 },
+      { label: 'Groot (220x95)', breedte: 2.2, hoogte: 0.95 },
+    ],
+    handmatigeAfmetingen: true,
+    minBreedte: 1.5,
+    maxBreedte: 2.5,
+    minHoogte: 0.7,
+    maxHoogte: 1.1
   },
   {
     id: 'salontafel',
@@ -892,7 +945,12 @@ export const beschikbareMeubels: Meubel[] = [
       { label: 'Klein (100x50)', breedte: 1.0, hoogte: 0.5 },
       { label: 'Medium (120x60)', breedte: 1.2, hoogte: 0.6 },
       { label: 'Groot (140x70)', breedte: 1.4, hoogte: 0.7 },
-    ]
+    ],
+    handmatigeAfmetingen: true,
+    minBreedte: 0.6,
+    maxBreedte: 2.0,
+    minHoogte: 0.4,
+    maxHoogte: 1.2
   },
   {
     id: 'salontafel-rond',
@@ -906,7 +964,12 @@ export const beschikbareMeubels: Meubel[] = [
       { label: 'Klein (60cm)', breedte: 0.6, hoogte: 0.6 },
       { label: 'Medium (80cm)', breedte: 0.8, hoogte: 0.8 },
       { label: 'Groot (100cm)', breedte: 1.0, hoogte: 1.0 },
-    ]
+    ],
+    handmatigeAfmetingen: true,
+    minBreedte: 0.4,
+    maxBreedte: 1.5,
+    minHoogte: 0.4,
+    maxHoogte: 1.5
   },
   {
     id: 'tv-meubel',
@@ -920,7 +983,12 @@ export const beschikbareMeubels: Meubel[] = [
       { label: 'Klein (120cm)', breedte: 1.2, hoogte: 0.45 },
       { label: 'Medium (180cm)', breedte: 1.8, hoogte: 0.45 },
       { label: 'Groot (220cm)', breedte: 2.2, hoogte: 0.45 },
-    ]
+    ],
+    handmatigeAfmetingen: true,
+    minBreedte: 0.8,
+    maxBreedte: 3.0,
+    minHoogte: 0.3,
+    maxHoogte: 0.8
   },
   {
     id: 'boekenkast',
@@ -934,7 +1002,12 @@ export const beschikbareMeubels: Meubel[] = [
       { label: 'Smal (80cm)', breedte: 0.8, hoogte: 0.4 },
       { label: 'Normaal (100cm)', breedte: 1.0, hoogte: 0.4 },
       { label: 'Breed (120cm)', breedte: 1.2, hoogte: 0.4 },
-    ]
+    ],
+    handmatigeAfmetingen: true,
+    minBreedte: 0.4,
+    maxBreedte: 3.0,
+    minHoogte: 0.3,
+    maxHoogte: 0.8
   },
 
   // === SLAAPKAMER ===
@@ -971,7 +1044,12 @@ export const beschikbareMeubels: Meubel[] = [
       { label: '80x200cm', breedte: 0.8, hoogte: 2.0 },
       { label: '90x200cm', breedte: 0.9, hoogte: 2.0 },
       { label: '100x200cm', breedte: 1.0, hoogte: 2.0 },
-    ]
+    ],
+    handmatigeAfmetingen: true,
+    minBreedte: 0.7,
+    maxBreedte: 1.2,
+    minHoogte: 1.9,
+    maxHoogte: 2.2
   },
   {
     id: 'nachtkastje',
@@ -980,7 +1058,12 @@ export const beschikbareMeubels: Meubel[] = [
     hoogte: 0.45,
     kleur: '#deb887',
     icoon: 'nachtkastje',
-    categorie: 'slaapkamer'
+    categorie: 'slaapkamer',
+    handmatigeAfmetingen: true,
+    minBreedte: 0.3,
+    maxBreedte: 0.7,
+    minHoogte: 0.3,
+    maxHoogte: 0.7
   },
   {
     id: 'kledingkast',
@@ -994,7 +1077,12 @@ export const beschikbareMeubels: Meubel[] = [
       { label: '2-deurs (100cm)', breedte: 1.0, hoogte: 0.6 },
       { label: '3-deurs (150cm)', breedte: 1.5, hoogte: 0.6 },
       { label: '4-deurs (200cm)', breedte: 2.0, hoogte: 0.6 },
-    ]
+    ],
+    handmatigeAfmetingen: true,
+    minBreedte: 0.5,
+    maxBreedte: 3.0,
+    minHoogte: 0.4,
+    maxHoogte: 0.8
   },
   {
     id: 'bureau',
@@ -1008,7 +1096,12 @@ export const beschikbareMeubels: Meubel[] = [
       { label: 'Compact (100x50)', breedte: 1.0, hoogte: 0.5 },
       { label: 'Standaard (120x60)', breedte: 1.2, hoogte: 0.6 },
       { label: 'Groot (160x80)', breedte: 1.6, hoogte: 0.8 },
-    ]
+    ],
+    handmatigeAfmetingen: true,
+    minBreedte: 0.6,
+    maxBreedte: 2.5,
+    minHoogte: 0.4,
+    maxHoogte: 1.0
   },
   {
     id: 'bureaustoel',
@@ -1017,7 +1110,12 @@ export const beschikbareMeubels: Meubel[] = [
     hoogte: 0.5,
     kleur: '#2f4f4f',
     icoon: 'bureaustoel',
-    categorie: 'slaapkamer'
+    categorie: 'slaapkamer',
+    handmatigeAfmetingen: true,
+    minBreedte: 0.4,
+    maxBreedte: 0.7,
+    minHoogte: 0.4,
+    maxHoogte: 0.7
   },
 
   // === EETKAMER ===
@@ -1034,7 +1132,12 @@ export const beschikbareMeubels: Meubel[] = [
       { label: '6-persoons (160x90)', breedte: 1.6, hoogte: 0.9 },
       { label: '8-persoons (200x100)', breedte: 2.0, hoogte: 1.0 },
       { label: '10-persoons (240x100)', breedte: 2.4, hoogte: 1.0 },
-    ]
+    ],
+    handmatigeAfmetingen: true,
+    minBreedte: 0.8,
+    maxBreedte: 3.5,
+    minHoogte: 0.6,
+    maxHoogte: 1.5
   },
   {
     id: 'eettafel-rond',
@@ -1048,7 +1151,12 @@ export const beschikbareMeubels: Meubel[] = [
       { label: '4-persoons (100cm)', breedte: 1.0, hoogte: 1.0 },
       { label: '6-persoons (120cm)', breedte: 1.2, hoogte: 1.2 },
       { label: '8-persoons (150cm)', breedte: 1.5, hoogte: 1.5 },
-    ]
+    ],
+    handmatigeAfmetingen: true,
+    minBreedte: 0.8,
+    maxBreedte: 2.0,
+    minHoogte: 0.8,
+    maxHoogte: 2.0
   },
   {
     id: 'eetkamerstoel',
@@ -1057,7 +1165,12 @@ export const beschikbareMeubels: Meubel[] = [
     hoogte: 0.45,
     kleur: '#bc8f8f',
     icoon: 'stoel',
-    categorie: 'eetkamer'
+    categorie: 'eetkamer',
+    handmatigeAfmetingen: true,
+    minBreedte: 0.35,
+    maxBreedte: 0.6,
+    minHoogte: 0.35,
+    maxHoogte: 0.6
   },
 
   // === ACCESSOIRES ===
@@ -1068,7 +1181,12 @@ export const beschikbareMeubels: Meubel[] = [
     hoogte: 0.5,
     kleur: '#228b22',
     icoon: 'plant',
-    categorie: 'accessoires'
+    categorie: 'accessoires',
+    handmatigeAfmetingen: true,
+    minBreedte: 0.3,
+    maxBreedte: 1.0,
+    minHoogte: 0.3,
+    maxHoogte: 1.0
   },
   {
     id: 'plant-klein',
@@ -1077,7 +1195,12 @@ export const beschikbareMeubels: Meubel[] = [
     hoogte: 0.3,
     kleur: '#32cd32',
     icoon: 'plant',
-    categorie: 'accessoires'
+    categorie: 'accessoires',
+    handmatigeAfmetingen: true,
+    minBreedte: 0.2,
+    maxBreedte: 0.6,
+    minHoogte: 0.2,
+    maxHoogte: 0.6
   },
   {
     id: 'vloerlamp',
@@ -1086,7 +1209,12 @@ export const beschikbareMeubels: Meubel[] = [
     hoogte: 0.35,
     kleur: '#ffd700',
     icoon: 'lamp',
-    categorie: 'accessoires'
+    categorie: 'accessoires',
+    handmatigeAfmetingen: true,
+    minBreedte: 0.2,
+    maxBreedte: 0.6,
+    minHoogte: 0.2,
+    maxHoogte: 0.6
   },
   {
     id: 'dressoir',
@@ -1099,6 +1227,11 @@ export const beschikbareMeubels: Meubel[] = [
     beschikbareAfmetingen: [
       { label: 'Klein (120cm)', breedte: 1.2, hoogte: 0.45 },
       { label: 'Groot (150cm)', breedte: 1.5, hoogte: 0.45 },
-    ]
+    ],
+    handmatigeAfmetingen: true,
+    minBreedte: 0.8,
+    maxBreedte: 2.5,
+    minHoogte: 0.3,
+    maxHoogte: 0.6
   },
 ]

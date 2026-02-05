@@ -2,6 +2,8 @@ import { useState } from 'react'
 import Plattegrond from './components/Plattegrond'
 import MeubelLijst from './components/MeubelLijst'
 import Toolbar from './components/Toolbar'
+import ZoomControls from './components/ZoomControls'
+import EigenschappenPaneel from './components/EigenschappenPaneel'
 import { GeplaatstMeubel } from './types'
 import { beschikbareMeubels } from './data/appartement'
 
@@ -17,6 +19,18 @@ function App() {
 
   // State voor geselecteerd item op de plattegrond (om te bewerken)
   const [geselecteerdItemId, setGeselecteerdItemId] = useState<string | null>(null)
+
+  // State voor zoom en pan
+  const [zoom, setZoom] = useState(1)
+  const [stagePosition, setStagePosition] = useState({ x: 0, y: 0 })
+
+  // Zoom handlers
+  const handleZoomIn = () => setZoom(z => Math.min(z * 1.2, 3))
+  const handleZoomOut = () => setZoom(z => Math.max(z / 1.2, 0.3))
+  const handleZoomReset = () => {
+    setZoom(1)
+    setStagePosition({ x: 0, y: 0 })
+  }
 
   // Nieuw meubel plaatsen op de plattegrond
   const handleStageClick = (x: number, y: number) => {
@@ -74,7 +88,7 @@ function App() {
     }
   }
 
-  // Item roteren
+  // Item roteren (90 graden)
   const handleRoteren = () => {
     if (geselecteerdItemId) {
       setGeplaatsteItems(items =>
@@ -85,6 +99,46 @@ function App() {
         )
       )
     }
+  }
+
+  // Item roteren naar specifieke hoek (360 graden)
+  const handleSetRotatie = (graden: number) => {
+    if (geselecteerdItemId) {
+      setGeplaatsteItems(items =>
+        items.map(item =>
+          item.id === geselecteerdItemId
+            ? { ...item, rotatie: graden % 360 }
+            : item
+        )
+      )
+    }
+  }
+
+  // Item resizen (nieuwe afmetingen)
+  const handleResize = (id: string, nieuweBreedte: number, nieuweHoogte: number) => {
+    // Zoek het meubel voor min/max grenzen
+    const item = geplaatsteItems.find(i => i.id === id)
+    if (!item) return
+
+    const meubel = beschikbareMeubels.find(m => m.id === item.meubelId)
+    if (!meubel) return
+
+    // Clamp naar min/max indien gedefinieerd
+    const minBreedte = meubel.minBreedte ?? 0.3
+    const maxBreedte = meubel.maxBreedte ?? 10
+    const minHoogte = meubel.minHoogte ?? 0.3
+    const maxHoogte = meubel.maxHoogte ?? 10
+
+    const clampedBreedte = Math.max(minBreedte, Math.min(maxBreedte, nieuweBreedte))
+    const clampedHoogte = Math.max(minHoogte, Math.min(maxHoogte, nieuweHoogte))
+
+    setGeplaatsteItems(items =>
+      items.map(item =>
+        item.id === id
+          ? { ...item, customBreedte: clampedBreedte, customHoogte: clampedHoogte }
+          : item
+      )
+    )
   }
 
   // Alles wissen
@@ -121,10 +175,10 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-[1800px] mx-auto px-6 py-4 flex items-center justify-between">
+    <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100">
+      {/* Header - vaste hoogte */}
+      <header className="h-16 bg-white border-b border-slate-200 z-50 shadow-sm flex items-center">
+        <div className="w-full max-w-[1800px] mx-auto px-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -153,11 +207,12 @@ function App() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-[1800px] mx-auto p-6">
-        <div className="flex gap-6">
-          {/* Linker sidebar: Meubel selectie */}
-          <aside className="w-72 flex-shrink-0">
+      {/* Main Content - vulling van resterende hoogte */}
+      <main className="h-[calc(100vh-64px)] overflow-hidden">
+        <div className="h-full max-w-[1800px] mx-auto p-4">
+          <div className="flex gap-4 h-full">
+            {/* Linker sidebar: Meubel selectie */}
+            <aside className="w-72 h-full flex-shrink-0">
             <MeubelLijst
               geselecteerdMeubelId={tePlaatsenMeubelId}
               onMeubelSelect={(id, afmetingen) => {
@@ -166,21 +221,25 @@ function App() {
                 setGeselecteerdItemId(null)
               }}
             />
-          </aside>
+            </aside>
 
-          {/* Rechter paneel: Plattegrond */}
-          <div className="flex-1 flex flex-col gap-4">
-            {/* Floating Toolbar */}
+            {/* Midden: Plattegrond */}
+            <div className="flex-1 flex flex-col gap-3 h-full overflow-hidden">
+              {/* Floating Toolbar */}
             <Toolbar
               geselecteerdItemId={geselecteerdItemId}
               onVerwijderen={handleVerwijderen}
               onRoteren={handleRoteren}
+              onSetRotatie={handleSetRotatie}
+              huidigeRotatie={geplaatsteItems.find(i => i.id === geselecteerdItemId)?.rotatie}
               aantalItems={geplaatsteItems.length}
               tePlaatsenMeubelId={tePlaatsenMeubelId}
+              geselecteerdItem={geplaatsteItems.find(i => i.id === geselecteerdItemId)}
+              onResize={handleResize}
             />
 
-            {/* Plattegrond Canvas */}
-            <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-200/50 p-6 overflow-auto">
+              {/* Plattegrond Canvas */}
+              <div className="flex-1 overflow-auto bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-200/50 p-4">
               <Plattegrond
                 geplaatsteItems={geplaatsteItems}
                 geselecteerdItem={geselecteerdItemId}
@@ -188,27 +247,55 @@ function App() {
                 onItemMove={handleItemMove}
                 onStageClick={handleStageClick}
                 onDrop={handleDrop}
+                onItemResize={handleResize}
+                zoom={zoom}
+                stagePosition={stagePosition}
+                onZoomChange={setZoom}
+                onStageMove={setStagePosition}
               />
+              </div>
+
+              {/* Instructie hint */}
+              <div className="text-center text-sm text-slate-500 py-2 flex-shrink-0">
+                {tePlaatsenMeubelId ? (
+                  <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-50 text-blue-700 rounded-full text-xs">
+                    <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                    Klik op de plattegrond om het meubel te plaatsen
+                  </span>
+                ) : geselecteerdItemId ? (
+                  <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-slate-100 text-slate-600 rounded-full text-xs">
+                    Sleep om te verplaatsen, of gebruik de toolbar
+                  </span>
+                ) : (
+                  <span className="text-slate-400 text-xs">Sleep een meubel naar de plattegrond</span>
+                )}
+              </div>
             </div>
 
-            {/* Instructie hint */}
-            <div className="text-center text-sm text-slate-500">
-              {tePlaatsenMeubelId ? (
-                <span className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-full">
-                  <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-                  Klik op de plattegrond om het meubel te plaatsen
-                </span>
-              ) : geselecteerdItemId ? (
-                <span className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-600 rounded-full">
-                  Sleep om te verplaatsen, of gebruik de toolbar om te roteren/verwijderen
-                </span>
-              ) : (
-                <span className="text-slate-400">Sleep een meubel naar de plattegrond, of klik om te selecteren</span>
-              )}
-            </div>
+            {/* Rechter sidebar: Eigenschappen paneel */}
+            <aside className="w-64 h-full flex-shrink-0 overflow-auto">
+            <EigenschappenPaneel
+              geselecteerdItem={geplaatsteItems.find(i => i.id === geselecteerdItemId)}
+              meubel={geselecteerdItemId
+                ? beschikbareMeubels.find(m => m.id === geplaatsteItems.find(i => i.id === geselecteerdItemId)?.meubelId)
+                : undefined
+              }
+              geplaatsteItems={geplaatsteItems}
+              beschikbareMeubels={beschikbareMeubels}
+              zoom={zoom}
+            />
+            </aside>
           </div>
         </div>
       </main>
+
+      {/* Zoom Controls */}
+      <ZoomControls
+        zoom={zoom}
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        onZoomReset={handleZoomReset}
+      />
     </div>
   )
 }

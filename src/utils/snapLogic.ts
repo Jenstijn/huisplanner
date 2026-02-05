@@ -1,7 +1,9 @@
 import { Muur, GeplaatstMeubel } from '../types'
 
-// Snap threshold in meters (20cm)
+// Snap threshold in meters (20cm om te snappen)
 const SNAP_THRESHOLD = 0.2
+// Grotere threshold om los te breken van snap (35cm) - hysteresis
+const RELEASE_THRESHOLD = 0.35
 
 // Result type voor snap functies
 export interface SnapResult {
@@ -11,21 +13,85 @@ export interface SnapResult {
   snapType?: 'muur' | 'tafel'
 }
 
+// Bounds voor constraint checking
+export interface Bounds {
+  minX: number
+  maxX: number
+  minY: number
+  maxY: number
+}
+
+/**
+ * Bereken de buitengrenzen van het appartement op basis van buitenmuren.
+ */
+export function getBuitenGrenzen(muren: Muur[]): Bounds {
+  // Filter alleen buitenmuren
+  const buitenMuren = muren.filter(m => m.isBuiten)
+
+  if (buitenMuren.length === 0) {
+    // Fallback: gebruik alle muren
+    const alleMuren = muren
+    let minX = Infinity, maxX = -Infinity
+    let minY = Infinity, maxY = -Infinity
+
+    alleMuren.forEach(muur => {
+      minX = Math.min(minX, muur.start.x, muur.eind.x)
+      maxX = Math.max(maxX, muur.start.x, muur.eind.x)
+      minY = Math.min(minY, muur.start.y, muur.eind.y)
+      maxY = Math.max(maxY, muur.start.y, muur.eind.y)
+    })
+
+    return { minX, maxX, minY, maxY }
+  }
+
+  let minX = Infinity, maxX = -Infinity
+  let minY = Infinity, maxY = -Infinity
+
+  buitenMuren.forEach(muur => {
+    minX = Math.min(minX, muur.start.x, muur.eind.x)
+    maxX = Math.max(maxX, muur.start.x, muur.eind.x)
+    minY = Math.min(minY, muur.start.y, muur.eind.y)
+    maxY = Math.max(maxY, muur.start.y, muur.eind.y)
+  })
+
+  return { minX, maxX, minY, maxY }
+}
+
+/**
+ * Houd een meubel binnen de gegeven grenzen (harde stop).
+ */
+export function constrainToBounds(
+  x: number,
+  y: number,
+  breedte: number,
+  hoogte: number,
+  grenzen: Bounds
+): { x: number; y: number } {
+  return {
+    x: Math.max(grenzen.minX, Math.min(grenzen.maxX - breedte, x)),
+    y: Math.max(grenzen.minY, Math.min(grenzen.maxY - hoogte, y))
+  }
+}
+
 /**
  * Snap een meubel naar de dichtstbijzijnde muur als het binnen de threshold is.
  * Werkt met zowel horizontale als verticale muren.
+ * @param wasSnapped - Was het meubel al gesnapt? Gebruikt grotere threshold voor loslaten (hysteresis)
  */
 export function snapToWalls(
   meubelX: number,
   meubelY: number,
   meubelBreedte: number,
   meubelHoogte: number,
-  muren: Muur[]
+  muren: Muur[],
+  wasSnapped: boolean = false
 ): SnapResult {
+  // Gebruik grotere threshold als meubel al gesnapt was (hysteresis)
+  const threshold = wasSnapped ? RELEASE_THRESHOLD : SNAP_THRESHOLD
   let resultX = meubelX
   let resultY = meubelY
   let snapped = false
-  let minDistance = SNAP_THRESHOLD
+  let minDistance = threshold
 
   // Bereken meubel hoekpunten
   const meubelLinks = meubelX

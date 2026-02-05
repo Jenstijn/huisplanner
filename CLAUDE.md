@@ -120,3 +120,37 @@ Dit voorkomt dat er bugs worden opgeleverd die pas later ontdekt worden.
 - Definieer interfaces in aparte `types/index.ts` voor herbruikbaarheid
 - Gebruik `categorie?: 'woonkamer' | 'slaapkamer' | 'eetkamer' | 'accessoires'` voor type-safe categorieën
 - Optional chaining (`meubel?.beschikbareAfmetingen?.[index]`) voor veilige data access
+
+### Chaise Longue vs Hoekbank (Fout Geleerd)
+- **FOUT:** Chaise longue eerst geïmplementeerd als L-vormige bank (hoekbank)
+- **CORRECT:** Chaise longue is een rechte bank met verlengd liggedeelte aan één kant
+- Het ligdeel steekt NAAR VOREN uit (grotere diepte), niet OPZIJ
+- Bij onbekende meubeltypes: eerst visuele referentie opzoeken voordat je gaat bouwen
+
+### Konva Rotatie met Center Pivot (Fout Geleerd)
+- **FOUT:** Default Konva rotatie draait om top-left corner (0,0 van Group)
+- **CORRECT:** Gebruik `offsetX={width/2}` en `offsetY={height/2}` voor center rotatie
+- Compenseer offset door `+ width/2` bij x en `+ height/2` bij y te tellen
+- Drag handlers moeten rekening houden met offset bij positie berekening:
+  - Bij lezen: `(e.target.x() - OFFSET_X - width/2) / PIXELS_PER_METER`
+  - Bij schrijven: `finalX * PIXELS_PER_METER + OFFSET_X + width/2`
+
+### Live Preview vs State Thrashing (Best Practice)
+- **FOUT:** `onItemResize` aanroepen in `onDragMove` = te veel re-renders
+- **CORRECT:** Gebruik lokale preview state die alleen de UI update
+- Sync naar parent state alleen in `onDragEnd`
+- Voorbeeld: `const [resizePreview, setResizePreview] = useState<{id, width, height} | null>(null)`
+- In rendering: `const displayWidth = resizePreview?.id === item.id ? resizePreview.width : baseWidth`
+
+### Viewport Layout voor Single-Page Apps
+- Gebruik `h-screen overflow-hidden` op root voor geen body scroll
+- Header: expliciete vaste hoogte (`h-16` = 64px)
+- Main: `h-[calc(100vh-64px)] overflow-hidden` voor resterende hoogte
+- Sidebars: `h-full overflow-auto` voor interne scroll
+- Flex container: `h-full` om parent height te respecteren
+- Test layout op verschillende schermgroottes
+
+### UI Input Velden Dimensionering
+- Number inputs voor afmetingen: `w-16` (64px) is minimum voor getallen zoals "2.50"
+- Gebruik `text-xs` i.p.v. `text-sm` voor compactere layout
+- `px-1` i.p.v. `px-1.5` voor meer ruimte binnen het veld

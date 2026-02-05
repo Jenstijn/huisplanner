@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { beschikbareMeubels } from '../data/appartement'
 import { Meubel } from '../types'
+import MeubelIcoon from './MeubelIcoon'
 
 interface MeubelLijstProps {
   geselecteerdMeubelId: string | null
@@ -174,7 +175,7 @@ export default function MeubelLijst({ geselecteerdMeubelId, onMeubelSelect }: Me
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-200/50 overflow-hidden flex flex-col h-[calc(100vh-140px)]">
+    <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-200/50 overflow-hidden flex flex-col h-full">
       {/* Header */}
       <div className="p-4 border-b border-slate-100">
         <h2 className="text-base font-semibold text-slate-800 mb-3">Meubels</h2>
@@ -352,9 +353,14 @@ export default function MeubelLijst({ geselecteerdMeubelId, onMeubelSelect }: Me
                     >
                       <div className="flex items-center gap-3">
                         <div
-                          className={`w-8 h-8 rounded-lg shadow-sm flex-shrink-0 ${isGeselecteerd ? 'ring-2 ring-white/50' : ''}`}
-                          style={{ backgroundColor: meubel.kleur }}
-                        />
+                          className={`w-8 h-8 rounded-lg shadow-sm flex-shrink-0 overflow-hidden ${isGeselecteerd ? 'ring-2 ring-white/50' : ''}`}
+                        >
+                          <MeubelIcoon
+                            type={meubel.icoon || 'default'}
+                            size={32}
+                            kleur={meubel.kleur}
+                          />
+                        </div>
                         <div className="flex-1 min-w-0">
                           <div className={`text-sm font-medium truncate ${isGeselecteerd ? 'text-white' : 'text-slate-700'}`}>
                             {meubel.naam}
