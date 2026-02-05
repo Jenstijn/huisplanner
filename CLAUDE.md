@@ -400,3 +400,50 @@ Dit voorkomt dat er bugs worden opgeleverd die pas later ontdekt worden.
   </div>
   ```
 - **TIP:** Test modals ALTIJD op mobile met keyboard open - elementen moeten zichtbaar blijven
+
+### iOS 26 Liquid Glass UI Uniformiteit (VERPLICHT!)
+**Alle nieuwe UI elementen MOETEN de iOS 26 Liquid Glass stijl volgen:**
+
+1. **Modals en popups**: Gebruik `glass-dark` class met:
+   - `p-5` padding
+   - `rounded-2xl` hoeken
+   - Witte tekst (`text-white`)
+   - Semi-transparante inputs: `bg-white/10 border-white/20 text-white placeholder-white/50`
+   - `animate-scale-in` voor pop-in animatie
+
+2. **Buttons in dark glass context**:
+   - Cancel: `bg-white/10 text-white/80 border border-white/20 rounded-2xl`
+   - Primary: `bg-blue-500/80 text-white rounded-2xl backdrop-blur-sm`
+   - Beide: `active:scale-95` voor touch feedback
+
+3. **Backdrop voor modals**:
+   - `fixed inset-0 z-50 bg-black/30 backdrop-blur-sm`
+   - Click handler om te sluiten
+
+4. **Bestaande glass classes gebruiken**:
+   - `.glass` - standaard navigatie elementen
+   - `.glass-dark` - modals/popups met donkere achtergrond
+   - `.glass-pill` - status indicators
+   - `.glass-fab` - floating action buttons
+
+5. **VOOR elke nieuwe UI**:
+   - Check eerst welke bestaande `.glass-*` class past
+   - Toon de gebruiker een preview VOORDAT je pusht
+   - Zorg voor visuele consistentie met bestaande componenten
+
+### Firestore Undefined Values (Fout Geleerd)
+- **FOUT:** `undefined` waarde toewijzen aan een object property en dit naar Firestore sturen
+- **ERROR:** "Function setDoc() called with invalid data. Unsupported field value: undefined"
+- **CORRECT:** Gebruik `delete` om een property te verwijderen in plaats van `undefined` toe te wijzen:
+  ```typescript
+  // FOUT:
+  updated.notitie = undefined  // Firestore error!
+
+  // CORRECT:
+  if (notitie) {
+    updated.notitie = notitie
+  } else {
+    delete updated.notitie  // Verwijder de property volledig
+  }
+  ```
+- **PATROON:** Bij optionele velden die "leeg" kunnen worden: altijd `delete` gebruiken
