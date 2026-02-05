@@ -166,20 +166,20 @@ export default function MobileToolbar({
         </div>
       )}
 
-      {/* Notitie input popup - fixed overlay boven keyboard */}
+      {/* Notitie input popup - iOS 26 Liquid Glass style */}
       {geselecteerdItem && showNotitieInput && onNotitieChange && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-black/20" onClick={() => {
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-black/30 backdrop-blur-sm" onClick={() => {
           setShowNotitieInput(false)
           setNotitieInput(geselecteerdItem?.notitie ?? '')
         }}>
-          <div className="bg-white rounded-2xl shadow-xl p-5 w-[300px] mx-4 animate-scale-in" onClick={(e) => e.stopPropagation()}>
-            <div className="text-base font-semibold text-slate-800 mb-4">Notitie bewerken</div>
+          <div className="glass-dark p-5 w-[300px] mx-4 animate-scale-in" onClick={(e) => e.stopPropagation()}>
+            <div className="text-base font-semibold text-white mb-4">Notitie bewerken</div>
             <input
               type="text"
               value={notitieInput}
               onChange={(e) => setNotitieInput(e.target.value.slice(0, 100))}
               placeholder="Bijv. IKEA KALLAX, van oma..."
-              className="w-full px-3 py-3 text-base bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+              className="w-full px-4 py-3 text-base bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 mb-4"
               maxLength={100}
               autoFocus
             />
@@ -189,7 +189,7 @@ export default function MobileToolbar({
                   setShowNotitieInput(false)
                   setNotitieInput(geselecteerdItem?.notitie ?? '')
                 }}
-                className="flex-1 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 rounded-xl active:scale-95"
+                className="flex-1 py-3 text-sm font-medium text-white/80 bg-white/10 rounded-2xl active:scale-95 border border-white/20"
               >
                 Annuleer
               </button>
@@ -199,7 +199,7 @@ export default function MobileToolbar({
                   onNotitieChange(trimmed || undefined)
                   setShowNotitieInput(false)
                 }}
-                className="flex-1 py-2.5 text-sm font-medium text-white bg-blue-500 rounded-xl active:scale-95"
+                className="flex-1 py-3 text-sm font-medium text-white bg-blue-500/80 rounded-2xl active:scale-95 backdrop-blur-sm"
               >
                 Opslaan
               </button>
