@@ -1,13 +1,23 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Plattegrond from './components/Plattegrond'
 import MeubelLijst from './components/MeubelLijst'
 import Toolbar from './components/Toolbar'
 import ZoomControls from './components/ZoomControls'
 import EigenschappenPaneel from './components/EigenschappenPaneel'
 import { GeplaatstMeubel } from './types'
-import { beschikbareMeubels } from './data/appartement'
+import { beschikbareMeubels, PIXELS_PER_METER } from './data/appartement'
+
+// Canvas dimensies (moet overeenkomen met Plattegrond.tsx)
+const CANVAS_BREEDTE_M = 9
+const CANVAS_HOOGTE_M = 12.5
+const OFFSET = 40
+const CANVAS_BREEDTE_PX = CANVAS_BREEDTE_M * PIXELS_PER_METER + OFFSET * 2
+const CANVAS_HOOGTE_PX = CANVAS_HOOGTE_M * PIXELS_PER_METER + OFFSET * 2
 
 function App() {
+  // Ref voor de canvas container om beschikbare ruimte te meten
+  const canvasContainerRef = useRef<HTMLDivElement>(null)
+
   // State voor geplaatste meubels
   const [geplaatsteItems, setGeplaatsteItems] = useState<GeplaatstMeubel[]>([])
 
@@ -20,15 +30,54 @@ function App() {
   // State voor geselecteerd item op de plattegrond (om te bewerken)
   const [geselecteerdItemId, setGeselecteerdItemId] = useState<string | null>(null)
 
-  // State voor zoom en pan
-  const [zoom, setZoom] = useState(1)
+  // State voor zoom en pan - start met null zodat we weten dat initiële zoom nog berekend moet worden
+  const [zoom, setZoom] = useState<number | null>(null)
   const [stagePosition, setStagePosition] = useState({ x: 0, y: 0 })
 
+  // Bereken initiële zoom zodat hele plattegrond past
+  useEffect(() => {
+    if (zoom !== null) return // Al geïnitialiseerd
+
+    const calculateInitialZoom = () => {
+      if (!canvasContainerRef.current) return
+
+      const container = canvasContainerRef.current
+      const availableWidth = container.clientWidth - 32 // padding
+      const availableHeight = container.clientHeight - 32
+
+      // Bereken zoom zodat canvas past in beschikbare ruimte
+      const zoomX = availableWidth / CANVAS_BREEDTE_PX
+      const zoomY = availableHeight / CANVAS_HOOGTE_PX
+
+      // Gebruik kleinste zoom zodat beide dimensies passen, met een kleine marge
+      const fitZoom = Math.min(zoomX, zoomY) * 0.95
+
+      // Clamp tussen 0.3 en 1 (nooit groter dan 100% bij start)
+      const initialZoom = Math.max(0.3, Math.min(1, fitZoom))
+
+      setZoom(initialZoom)
+    }
+
+    // Wacht even tot layout is gerenderd
+    requestAnimationFrame(calculateInitialZoom)
+  }, [zoom])
+
   // Zoom handlers
-  const handleZoomIn = () => setZoom(z => Math.min(z * 1.2, 3))
-  const handleZoomOut = () => setZoom(z => Math.max(z / 1.2, 0.3))
+  const handleZoomIn = () => setZoom(z => Math.min((z ?? 1) * 1.2, 3))
+  const handleZoomOut = () => setZoom(z => Math.max((z ?? 1) / 1.2, 0.3))
   const handleZoomReset = () => {
-    setZoom(1)
+    // Reset naar fit-to-view zoom
+    if (canvasContainerRef.current) {
+      const container = canvasContainerRef.current
+      const availableWidth = container.clientWidth - 32
+      const availableHeight = container.clientHeight - 32
+      const zoomX = availableWidth / CANVAS_BREEDTE_PX
+      const zoomY = availableHeight / CANVAS_HOOGTE_PX
+      const fitZoom = Math.min(zoomX, zoomY) * 0.95
+      setZoom(Math.max(0.3, Math.min(1, fitZoom)))
+    } else {
+      setZoom(0.75)
+    }
     setStagePosition({ x: 0, y: 0 })
   }
 
@@ -239,7 +288,11 @@ function App() {
             />
 
               {/* Plattegrond Canvas */}
-              <div className="flex-1 overflow-auto bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-200/50 p-4">
+              <div
+                ref={canvasContainerRef}
+                className="flex-1 overflow-auto bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-200/50 p-4"
+              >
+              {zoom !== null && (
               <Plattegrond
                 geplaatsteItems={geplaatsteItems}
                 geselecteerdItem={geselecteerdItemId}
@@ -253,6 +306,7 @@ function App() {
                 onZoomChange={setZoom}
                 onStageMove={setStagePosition}
               />
+              )}
               </div>
 
               {/* Instructie hint */}
@@ -282,7 +336,7 @@ function App() {
               }
               geplaatsteItems={geplaatsteItems}
               beschikbareMeubels={beschikbareMeubels}
-              zoom={zoom}
+              zoom={zoom ?? 1}
             />
             </aside>
           </div>
@@ -291,7 +345,7 @@ function App() {
 
       {/* Zoom Controls */}
       <ZoomControls
-        zoom={zoom}
+        zoom={zoom ?? 1}
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
         onZoomReset={handleZoomReset}
