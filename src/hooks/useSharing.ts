@@ -64,13 +64,8 @@ export function useSharing({ userId, userEmail, userName }: UseSharingOptions) {
         })
 
         setPendingInvites(invites)
-
-        // Auto-accept alle pending invites
-        if (userId && invites.length > 0) {
-          for (const invite of invites) {
-            await acceptShareByInvite(invite)
-          }
-        }
+        // NOTE: Invites worden NIET meer automatisch geaccepteerd
+        // Gebruiker moet expliciet acceptInvite() of declineInvite() aanroepen
       } catch (err) {
         console.error('Error checking pending invites:', err)
       }
@@ -80,10 +75,10 @@ export function useSharing({ userId, userEmail, userName }: UseSharingOptions) {
   }, [userEmail, userId])
 
   // ========================================
-  // Helper: Accepteer share via invite
+  // Accepteer een invite (door gebruiker)
   // ========================================
-  const acceptShareByInvite = async (invite: ShareInvite) => {
-    if (!userId) return
+  const acceptInvite = useCallback(async (invite: ShareInvite): Promise<boolean> => {
+    if (!userId) return false
 
     try {
       // Voeg user toe aan share
@@ -99,11 +94,42 @@ export function useSharing({ userId, userEmail, userName }: UseSharingOptions) {
         status: 'accepted'
       })
 
-      console.log(`✅ Auto-accepted share invite from ${invite.invitedByName || 'unknown'}`)
+      // Verwijder uit pending lijst
+      setPendingInvites(prev => prev.filter(i => i.id !== invite.id))
+
+      console.log(`✅ Accepted share invite from ${invite.invitedByName || 'unknown'}`)
+      return true
     } catch (err) {
       console.error('Error accepting invite:', err)
+      setError(err instanceof Error ? err.message : 'Fout bij accepteren uitnodiging')
+      return false
     }
-  }
+  }, [userId])
+
+  // ========================================
+  // Weiger een invite (door gebruiker)
+  // ========================================
+  const declineInvite = useCallback(async (invite: ShareInvite): Promise<boolean> => {
+    if (!userId) return false
+
+    try {
+      // Update invite status naar declined
+      const inviteRef = doc(db, 'shareInvites', invite.id)
+      await updateDoc(inviteRef, {
+        status: 'declined'
+      })
+
+      // Verwijder uit pending lijst
+      setPendingInvites(prev => prev.filter(i => i.id !== invite.id))
+
+      console.log(`❌ Declined share invite from ${invite.invitedByName || 'unknown'}`)
+      return true
+    } catch (err) {
+      console.error('Error declining invite:', err)
+      setError(err instanceof Error ? err.message : 'Fout bij weigeren uitnodiging')
+      return false
+    }
+  }, [userId])
 
   // ========================================
   // Maak een deellink voor een layout
@@ -448,6 +474,10 @@ export function useSharing({ userId, userEmail, userName }: UseSharingOptions) {
     removeUserFromShare,
     revokeShareLink,
     deleteShare,
+
+    // Invite acties (expliciet door gebruiker)
+    acceptInvite,
+    declineInvite,
 
     // Helpers
     getShareInfo,

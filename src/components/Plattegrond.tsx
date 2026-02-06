@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { Stage, Layer, Rect, Text, Group, Line, Circle, Arc, Ellipse } from 'react-konva'
 import AirfryerEasterEgg from './AirfryerEasterEgg'
 import {
@@ -154,48 +154,49 @@ interface MeubelRenderProps {
   isSelected: boolean
 }
 
+// Selectie kleur constante - gebruikt door alle renderers
+const SELECTED_STROKE = '#3b82f6'
+
+// ==========================================
+// MEUBEL RENDERERS
+// Elk meubel heeft unieke visuele details die een custom renderer vereisen
+// De SELECTED_STROKE constante zorgt voor consistente selectie-feedback
+// ==========================================
+
 // Bank met kussens
 const renderBank = ({ width, height, isSelected }: MeubelRenderProps) => (
   <Group>
-    {/* Basis */}
-    <Rect width={width} height={height} fill="#7a9a50" stroke={isSelected ? '#3b82f6' : '#5a7a30'} strokeWidth={isSelected ? 2 : 1} cornerRadius={4} />
-    {/* Rugleuning */}
+    <Rect width={width} height={height} fill="#7a9a50" stroke={isSelected ? SELECTED_STROKE : '#5a7a30'} strokeWidth={isSelected ? 2 : 1} cornerRadius={4} />
     <Rect x={2} y={2} width={width - 4} height={height * 0.25} fill="#6a8a40" cornerRadius={2} />
-    {/* Kussens */}
     <Rect x={4} y={height * 0.3} width={width * 0.45 - 6} height={height * 0.65} fill="#8aaa60" cornerRadius={3} />
     <Rect x={width * 0.5 + 2} y={height * 0.3} width={width * 0.45 - 6} height={height * 0.65} fill="#8aaa60" cornerRadius={3} />
   </Group>
 )
 
-// Fauteuil
+// Fauteuil met armleuningen
 const renderFauteuil = ({ width, height, isSelected }: MeubelRenderProps) => (
   <Group>
-    <Rect width={width} height={height} fill="#9a8070" stroke={isSelected ? '#3b82f6' : '#7a6050'} strokeWidth={isSelected ? 2 : 1} cornerRadius={4} />
-    {/* Rugleuning */}
+    <Rect width={width} height={height} fill="#9a8070" stroke={isSelected ? SELECTED_STROKE : '#7a6050'} strokeWidth={isSelected ? 2 : 1} cornerRadius={4} />
     <Rect x={3} y={3} width={width - 6} height={height * 0.3} fill="#8a7060" cornerRadius={2} />
-    {/* Zitkussen */}
     <Ellipse x={width / 2} y={height * 0.65} radiusX={width * 0.35} radiusY={height * 0.25} fill="#aa9080" />
-    {/* Armleuningen */}
     <Rect x={2} y={height * 0.25} width={width * 0.15} height={height * 0.6} fill="#8a7060" cornerRadius={2} />
     <Rect x={width - width * 0.15 - 2} y={height * 0.25} width={width * 0.15} height={height * 0.6} fill="#8a7060" cornerRadius={2} />
   </Group>
 )
 
-// Salontafel
+// Salontafel met nerf
 const renderSalontafel = ({ width, height, isSelected }: MeubelRenderProps) => (
   <Group>
-    <Rect width={width} height={height} fill="#d4a574" stroke={isSelected ? '#3b82f6' : '#b48554'} strokeWidth={isSelected ? 2 : 1} cornerRadius={3} />
-    {/* Tafelblad patroon */}
+    <Rect width={width} height={height} fill="#d4a574" stroke={isSelected ? SELECTED_STROKE : '#b48554'} strokeWidth={isSelected ? 2 : 1} cornerRadius={3} />
     <Line points={[width * 0.1, height * 0.5, width * 0.9, height * 0.5]} stroke="#c49564" strokeWidth={1} />
     <Line points={[width * 0.5, height * 0.2, width * 0.5, height * 0.8]} stroke="#c49564" strokeWidth={1} />
   </Group>
 )
 
-// Eettafel
+// Eettafel met poten
 const renderEettafel = ({ width, height, isSelected }: MeubelRenderProps) => (
   <Group>
-    <Rect width={width} height={height} fill="#b07040" stroke={isSelected ? '#3b82f6' : '#905020'} strokeWidth={isSelected ? 2 : 1} cornerRadius={2} />
-    {/* Poten */}
+    <Rect width={width} height={height} fill="#b07040" stroke={isSelected ? SELECTED_STROKE : '#905020'} strokeWidth={isSelected ? 2 : 1} cornerRadius={2} />
     <Rect x={4} y={4} width={8} height={8} fill="#804020" />
     <Rect x={width - 12} y={4} width={8} height={8} fill="#804020" />
     <Rect x={4} y={height - 12} width={8} height={8} fill="#804020" />
@@ -203,12 +204,10 @@ const renderEettafel = ({ width, height, isSelected }: MeubelRenderProps) => (
   </Group>
 )
 
-// Stoel
+// Stoel met rugleuning
 const renderStoel = ({ width, height, isSelected }: MeubelRenderProps) => (
   <Group>
-    {/* Zitting */}
-    <Rect width={width} height={height} fill="#c8a898" stroke={isSelected ? '#3b82f6' : '#a88878'} strokeWidth={isSelected ? 2 : 1} cornerRadius={2} />
-    {/* Rugleuning */}
+    <Rect width={width} height={height} fill="#c8a898" stroke={isSelected ? SELECTED_STROKE : '#a88878'} strokeWidth={isSelected ? 2 : 1} cornerRadius={2} />
     <Rect x={width * 0.15} y={2} width={width * 0.7} height={height * 0.25} fill="#b89888" cornerRadius={1} />
   </Group>
 )
@@ -216,16 +215,11 @@ const renderStoel = ({ width, height, isSelected }: MeubelRenderProps) => (
 // Tweepersoonsbed
 const renderBedDubbel = ({ width, height, isSelected }: MeubelRenderProps) => (
   <Group>
-    {/* Matras */}
-    <Rect width={width} height={height} fill="#e8e8f0" stroke={isSelected ? '#3b82f6' : '#b0b0c0'} strokeWidth={isSelected ? 2 : 1} cornerRadius={3} />
-    {/* Hoofdeinde */}
+    <Rect width={width} height={height} fill="#e8e8f0" stroke={isSelected ? SELECTED_STROKE : '#b0b0c0'} strokeWidth={isSelected ? 2 : 1} cornerRadius={3} />
     <Rect x={0} y={0} width={width} height={8} fill="#5060a0" cornerRadius={2} />
-    {/* Kussens */}
     <Rect x={4} y={12} width={width * 0.45 - 6} height={height * 0.2} fill="#f0f0f8" stroke="#d0d0e0" strokeWidth={1} cornerRadius={4} />
     <Rect x={width * 0.5 + 2} y={12} width={width * 0.45 - 6} height={height * 0.2} fill="#f0f0f8" stroke="#d0d0e0" strokeWidth={1} cornerRadius={4} />
-    {/* Dekbed */}
     <Rect x={3} y={height * 0.35} width={width - 6} height={height * 0.6} fill="#d0d8e8" cornerRadius={2} />
-    {/* Dekbed vouw */}
     <Line points={[width * 0.3, height * 0.35, width * 0.3, height * 0.55]} stroke="#c0c8d8" strokeWidth={1} />
     <Line points={[width * 0.7, height * 0.35, width * 0.7, height * 0.55]} stroke="#c0c8d8" strokeWidth={1} />
   </Group>
@@ -234,91 +228,75 @@ const renderBedDubbel = ({ width, height, isSelected }: MeubelRenderProps) => (
 // Eenpersoonsbed
 const renderBedEnkel = ({ width, height, isSelected }: MeubelRenderProps) => (
   <Group>
-    {/* Matras */}
-    <Rect width={width} height={height} fill="#e8e8f0" stroke={isSelected ? '#3b82f6' : '#b0b0c0'} strokeWidth={isSelected ? 2 : 1} cornerRadius={3} />
-    {/* Hoofdeinde */}
+    <Rect width={width} height={height} fill="#e8e8f0" stroke={isSelected ? SELECTED_STROKE : '#b0b0c0'} strokeWidth={isSelected ? 2 : 1} cornerRadius={3} />
     <Rect x={0} y={0} width={width} height={6} fill="#5060a0" cornerRadius={2} />
-    {/* Kussen */}
     <Rect x={4} y={10} width={width - 8} height={height * 0.18} fill="#f0f0f8" stroke="#d0d0e0" strokeWidth={1} cornerRadius={3} />
-    {/* Dekbed */}
     <Rect x={3} y={height * 0.32} width={width - 6} height={height * 0.63} fill="#d0d8e8" cornerRadius={2} />
   </Group>
 )
 
-// Nachtkastje
+// Nachtkastje met lade
 const renderNachtkastje = ({ width, height, isSelected }: MeubelRenderProps) => (
   <Group>
-    <Rect width={width} height={height} fill="#d4b896" stroke={isSelected ? '#3b82f6' : '#b49876'} strokeWidth={isSelected ? 2 : 1} cornerRadius={2} />
-    {/* Lade */}
+    <Rect width={width} height={height} fill="#d4b896" stroke={isSelected ? SELECTED_STROKE : '#b49876'} strokeWidth={isSelected ? 2 : 1} cornerRadius={2} />
     <Rect x={3} y={height * 0.4} width={width - 6} height={height * 0.25} fill="#c4a886" stroke="#b49876" strokeWidth={0.5} />
-    {/* Handvat */}
     <Rect x={width * 0.35} y={height * 0.48} width={width * 0.3} height={3} fill="#a08060" cornerRadius={1} />
   </Group>
 )
 
-// Kledingkast
+// Kledingkast met deuren
 const renderKledingkast = ({ width, height, isSelected }: MeubelRenderProps) => (
   <Group>
-    <Rect width={width} height={height} fill="#9a8575" stroke={isSelected ? '#3b82f6' : '#7a6555'} strokeWidth={isSelected ? 2 : 1} cornerRadius={2} />
-    {/* Deuren */}
+    <Rect width={width} height={height} fill="#9a8575" stroke={isSelected ? SELECTED_STROKE : '#7a6555'} strokeWidth={isSelected ? 2 : 1} cornerRadius={2} />
     <Line points={[width / 2, 3, width / 2, height - 3]} stroke="#8a7565" strokeWidth={1} />
-    {/* Handvatten */}
     <Rect x={width * 0.4 - 4} y={height * 0.45} width={4} height={height * 0.1} fill="#6a5545" cornerRadius={1} />
     <Rect x={width * 0.6} y={height * 0.45} width={4} height={height * 0.1} fill="#6a5545" cornerRadius={1} />
   </Group>
 )
 
-// Bureau
+// Bureau met laden
 const renderBureau = ({ width, height, isSelected }: MeubelRenderProps) => (
   <Group>
-    <Rect width={width} height={height} fill="#d2b48c" stroke={isSelected ? '#3b82f6' : '#b2946c'} strokeWidth={isSelected ? 2 : 1} cornerRadius={2} />
-    {/* Laden */}
+    <Rect width={width} height={height} fill="#d2b48c" stroke={isSelected ? SELECTED_STROKE : '#b2946c'} strokeWidth={isSelected ? 2 : 1} cornerRadius={2} />
     <Rect x={width * 0.6} y={3} width={width * 0.35} height={height * 0.4} fill="#c2a47c" stroke="#b2946c" strokeWidth={0.5} />
     <Rect x={width * 0.6} y={height * 0.5} width={width * 0.35} height={height * 0.45} fill="#c2a47c" stroke="#b2946c" strokeWidth={0.5} />
   </Group>
 )
 
-// Bureaustoel
+// Bureaustoel (cirkel met arc)
 const renderBureaustoel = ({ width, height, isSelected }: MeubelRenderProps) => (
   <Group>
-    {/* Zitting */}
-    <Circle x={width / 2} y={height / 2} radius={Math.min(width, height) * 0.4} fill="#3f4f5f" stroke={isSelected ? '#3b82f6' : '#2f3f4f'} strokeWidth={isSelected ? 2 : 1} />
-    {/* Rugleuning indicatie */}
+    <Circle x={width / 2} y={height / 2} radius={Math.min(width, height) * 0.4} fill="#3f4f5f" stroke={isSelected ? SELECTED_STROKE : '#2f3f4f'} strokeWidth={isSelected ? 2 : 1} />
     <Arc x={width / 2} y={height * 0.3} innerRadius={0} outerRadius={Math.min(width, height) * 0.25} angle={180} rotation={180} fill="#4f5f6f" />
   </Group>
 )
 
-// TV Meubel
+// TV Meubel met vakken
 const renderTVMeubel = ({ width, height, isSelected }: MeubelRenderProps) => (
   <Group>
-    <Rect width={width} height={height} fill="#4a4a4a" stroke={isSelected ? '#3b82f6' : '#2a2a2a'} strokeWidth={isSelected ? 2 : 1} cornerRadius={2} />
-    {/* Vakken */}
+    <Rect width={width} height={height} fill="#4a4a4a" stroke={isSelected ? SELECTED_STROKE : '#2a2a2a'} strokeWidth={isSelected ? 2 : 1} cornerRadius={2} />
     <Rect x={3} y={3} width={width * 0.3 - 4} height={height - 6} fill="#3a3a3a" cornerRadius={1} />
     <Rect x={width * 0.33} y={3} width={width * 0.34} height={height - 6} fill="#3a3a3a" cornerRadius={1} />
     <Rect x={width * 0.7} y={3} width={width * 0.3 - 4} height={height - 6} fill="#3a3a3a" cornerRadius={1} />
   </Group>
 )
 
-// Boekenkast
+// Boekenkast met planken
 const renderBoekenkast = ({ width, height, isSelected }: MeubelRenderProps) => (
   <Group>
-    <Rect width={width} height={height} fill="#8b4513" stroke={isSelected ? '#3b82f6' : '#6b2503'} strokeWidth={isSelected ? 2 : 1} cornerRadius={1} />
-    {/* Planken */}
+    <Rect width={width} height={height} fill="#8b4513" stroke={isSelected ? SELECTED_STROKE : '#6b2503'} strokeWidth={isSelected ? 2 : 1} cornerRadius={1} />
     <Line points={[2, height * 0.33, width - 2, height * 0.33]} stroke="#7b3503" strokeWidth={2} />
     <Line points={[2, height * 0.66, width - 2, height * 0.66]} stroke="#7b3503" strokeWidth={2} />
-    {/* Boeken indicatie */}
     <Rect x={4} y={4} width={6} height={height * 0.28} fill="#c04040" />
     <Rect x={12} y={4} width={5} height={height * 0.28} fill="#4040c0" />
     <Rect x={19} y={4} width={7} height={height * 0.28} fill="#40a040" />
   </Group>
 )
 
-// Plant
+// Plant met pot
 const renderPlant = ({ width, height, isSelected }: MeubelRenderProps) => (
   <Group>
-    {/* Pot */}
-    <Rect x={width * 0.2} y={height * 0.6} width={width * 0.6} height={height * 0.35} fill="#a05030" stroke={isSelected ? '#3b82f6' : '#803010'} strokeWidth={isSelected ? 2 : 1} cornerRadius={2} />
-    {/* Plant */}
+    <Rect x={width * 0.2} y={height * 0.6} width={width * 0.6} height={height * 0.35} fill="#a05030" stroke={isSelected ? SELECTED_STROKE : '#803010'} strokeWidth={isSelected ? 2 : 1} cornerRadius={2} />
     <Circle x={width * 0.5} y={height * 0.35} radius={width * 0.35} fill="#2a8b2a" />
     <Circle x={width * 0.3} y={height * 0.45} radius={width * 0.2} fill="#3a9b3a" />
     <Circle x={width * 0.7} y={height * 0.4} radius={width * 0.22} fill="#3a9b3a" />
@@ -328,11 +306,8 @@ const renderPlant = ({ width, height, isSelected }: MeubelRenderProps) => (
 // Vloerlamp
 const renderLamp = ({ width, height, isSelected }: MeubelRenderProps) => (
   <Group>
-    {/* Voet */}
-    <Circle x={width / 2} y={height * 0.85} radius={width * 0.35} fill="#707070" stroke={isSelected ? '#3b82f6' : '#505050'} strokeWidth={isSelected ? 2 : 1} />
-    {/* Paal */}
+    <Circle x={width / 2} y={height * 0.85} radius={width * 0.35} fill="#707070" stroke={isSelected ? SELECTED_STROKE : '#505050'} strokeWidth={isSelected ? 2 : 1} />
     <Rect x={width * 0.45} y={height * 0.3} width={width * 0.1} height={height * 0.55} fill="#606060" />
-    {/* Kap */}
     <Ellipse x={width / 2} y={height * 0.2} radiusX={width * 0.4} radiusY={height * 0.15} fill="#ffd700" stroke="#ddb700" strokeWidth={1} />
   </Group>
 )
@@ -340,14 +315,10 @@ const renderLamp = ({ width, height, isSelected }: MeubelRenderProps) => (
 // Hoekbank (L-vorm)
 const renderHoekbank = ({ width, height, isSelected }: MeubelRenderProps) => (
   <Group>
-    {/* Horizontaal deel (onderaan) */}
-    <Rect x={0} y={height * 0.55} width={width} height={height * 0.45} fill="#7a9a50" stroke={isSelected ? '#3b82f6' : '#5a7a30'} strokeWidth={isSelected ? 2 : 1} cornerRadius={4} />
-    {/* Verticaal deel (links) */}
-    <Rect x={0} y={0} width={width * 0.35} height={height} fill="#7a9a50" stroke={isSelected ? '#3b82f6' : '#5a7a30'} strokeWidth={isSelected ? 2 : 1} cornerRadius={4} />
-    {/* Kussens horizontaal */}
+    <Rect x={0} y={height * 0.55} width={width} height={height * 0.45} fill="#7a9a50" stroke={isSelected ? SELECTED_STROKE : '#5a7a30'} strokeWidth={isSelected ? 2 : 1} cornerRadius={4} />
+    <Rect x={0} y={0} width={width * 0.35} height={height} fill="#7a9a50" stroke={isSelected ? SELECTED_STROKE : '#5a7a30'} strokeWidth={isSelected ? 2 : 1} cornerRadius={4} />
     <Rect x={width * 0.38} y={height * 0.62} width={width * 0.28} height={height * 0.32} fill="#8aaa60" cornerRadius={3} />
     <Rect x={width * 0.68} y={height * 0.62} width={width * 0.28} height={height * 0.32} fill="#8aaa60" cornerRadius={3} />
-    {/* Kussens verticaal */}
     <Rect x={width * 0.05} y={height * 0.08} width={width * 0.25} height={height * 0.2} fill="#8aaa60" cornerRadius={3} />
     <Rect x={width * 0.05} y={height * 0.32} width={width * 0.25} height={height * 0.2} fill="#8aaa60" cornerRadius={3} />
   </Group>
@@ -356,8 +327,7 @@ const renderHoekbank = ({ width, height, isSelected }: MeubelRenderProps) => (
 // Ronde salontafel
 const renderSalontafelRond = ({ width, height, isSelected }: MeubelRenderProps) => (
   <Group>
-    <Circle x={width / 2} y={height / 2} radius={Math.min(width, height) / 2} fill="#d4a574" stroke={isSelected ? '#3b82f6' : '#b48554'} strokeWidth={isSelected ? 2 : 1} />
-    {/* Houten nerf patroon */}
+    <Circle x={width / 2} y={height / 2} radius={Math.min(width, height) / 2} fill="#d4a574" stroke={isSelected ? SELECTED_STROKE : '#b48554'} strokeWidth={isSelected ? 2 : 1} />
     <Line points={[width * 0.3, height * 0.5, width * 0.7, height * 0.5]} stroke="#c49564" strokeWidth={1} />
     <Line points={[width * 0.5, height * 0.3, width * 0.5, height * 0.7]} stroke="#c49564" strokeWidth={1} />
   </Group>
@@ -366,8 +336,7 @@ const renderSalontafelRond = ({ width, height, isSelected }: MeubelRenderProps) 
 // Ronde eettafel
 const renderEettafelRond = ({ width, height, isSelected }: MeubelRenderProps) => (
   <Group>
-    <Circle x={width / 2} y={height / 2} radius={Math.min(width, height) / 2} fill="#b07040" stroke={isSelected ? '#3b82f6' : '#905020'} strokeWidth={isSelected ? 2 : 1} />
-    {/* Centrale poot indicatie */}
+    <Circle x={width / 2} y={height / 2} radius={Math.min(width, height) / 2} fill="#b07040" stroke={isSelected ? SELECTED_STROKE : '#905020'} strokeWidth={isSelected ? 2 : 1} />
     <Circle x={width / 2} y={height / 2} radius={Math.min(width, height) * 0.15} fill="#804020" />
   </Group>
 )
@@ -375,124 +344,33 @@ const renderEettafelRond = ({ width, height, isSelected }: MeubelRenderProps) =>
 // Dressoir
 const renderDressoir = ({ width, height, isSelected }: MeubelRenderProps) => (
   <Group>
-    <Rect width={width} height={height} fill="#9a8575" stroke={isSelected ? '#3b82f6' : '#7a6555'} strokeWidth={isSelected ? 2 : 1} cornerRadius={2} />
-    {/* Laden */}
+    <Rect width={width} height={height} fill="#9a8575" stroke={isSelected ? SELECTED_STROKE : '#7a6555'} strokeWidth={isSelected ? 2 : 1} cornerRadius={2} />
     <Rect x={3} y={3} width={width / 2 - 5} height={height - 6} fill="#8a7565" stroke="#7a6555" strokeWidth={0.5} cornerRadius={1} />
     <Rect x={width / 2 + 2} y={3} width={width / 2 - 5} height={height - 6} fill="#8a7565" stroke="#7a6555" strokeWidth={0.5} cornerRadius={1} />
-    {/* Handvatten */}
     <Rect x={width * 0.2} y={height * 0.4} width={width * 0.1} height={3} fill="#6a5545" cornerRadius={1} />
     <Rect x={width * 0.7} y={height * 0.4} width={width * 0.1} height={3} fill="#6a5545" cornerRadius={1} />
   </Group>
 )
 
-// Chaise Longue Links: bank met verlengd ligdeel aan linkerkant
-// Het ligdeel steekt NAAR VOREN uit (grotere diepte), niet opzij
+// Chaise Longue Links
 const renderChaiseLongueLinks = ({ width, height, isSelected }: MeubelRenderProps) => (
   <Group>
-    {/* Basis zitgedeelte (volledige breedte, bovenste 55%) */}
-    <Rect
-      x={0}
-      y={0}
-      width={width}
-      height={height * 0.55}
-      fill="#7a9a50"
-      stroke={isSelected ? '#3b82f6' : '#5a7a30'}
-      strokeWidth={isSelected ? 2 : 1}
-      cornerRadius={4}
-    />
-    {/* Verlengd ligdeel links (steekt naar voren uit) */}
-    <Rect
-      x={0}
-      y={height * 0.55}
-      width={width * 0.45}
-      height={height * 0.45}
-      fill="#7a9a50"
-      stroke={isSelected ? '#3b82f6' : '#5a7a30'}
-      strokeWidth={isSelected ? 2 : 1}
-      cornerRadius={4}
-    />
-    {/* Rugleuning (bovenaan het zitgedeelte) */}
-    <Rect
-      x={2}
-      y={2}
-      width={width - 4}
-      height={height * 0.12}
-      fill="#6a8a40"
-      cornerRadius={2}
-    />
-    {/* Kussen zitdeel */}
-    <Rect
-      x={width * 0.47}
-      y={height * 0.16}
-      width={width * 0.50}
-      height={height * 0.35}
-      fill="#8aaa60"
-      cornerRadius={3}
-    />
-    {/* Kussen ligdeel */}
-    <Rect
-      x={4}
-      y={height * 0.16}
-      width={width * 0.40}
-      height={height * 0.80}
-      fill="#8aaa60"
-      cornerRadius={3}
-    />
+    <Rect x={0} y={0} width={width} height={height * 0.55} fill="#7a9a50" stroke={isSelected ? SELECTED_STROKE : '#5a7a30'} strokeWidth={isSelected ? 2 : 1} cornerRadius={4} />
+    <Rect x={0} y={height * 0.55} width={width * 0.45} height={height * 0.45} fill="#7a9a50" stroke={isSelected ? SELECTED_STROKE : '#5a7a30'} strokeWidth={isSelected ? 2 : 1} cornerRadius={4} />
+    <Rect x={2} y={2} width={width - 4} height={height * 0.12} fill="#6a8a40" cornerRadius={2} />
+    <Rect x={width * 0.47} y={height * 0.16} width={width * 0.50} height={height * 0.35} fill="#8aaa60" cornerRadius={3} />
+    <Rect x={4} y={height * 0.16} width={width * 0.40} height={height * 0.80} fill="#8aaa60" cornerRadius={3} />
   </Group>
 )
 
-// Chaise Longue Rechts: bank met verlengd ligdeel aan rechterkant
+// Chaise Longue Rechts
 const renderChaiseLongueRechts = ({ width, height, isSelected }: MeubelRenderProps) => (
   <Group>
-    {/* Basis zitgedeelte (volledige breedte, bovenste 55%) */}
-    <Rect
-      x={0}
-      y={0}
-      width={width}
-      height={height * 0.55}
-      fill="#7a9a50"
-      stroke={isSelected ? '#3b82f6' : '#5a7a30'}
-      strokeWidth={isSelected ? 2 : 1}
-      cornerRadius={4}
-    />
-    {/* Verlengd ligdeel rechts (steekt naar voren uit) */}
-    <Rect
-      x={width * 0.55}
-      y={height * 0.55}
-      width={width * 0.45}
-      height={height * 0.45}
-      fill="#7a9a50"
-      stroke={isSelected ? '#3b82f6' : '#5a7a30'}
-      strokeWidth={isSelected ? 2 : 1}
-      cornerRadius={4}
-    />
-    {/* Rugleuning (bovenaan het zitgedeelte) */}
-    <Rect
-      x={2}
-      y={2}
-      width={width - 4}
-      height={height * 0.12}
-      fill="#6a8a40"
-      cornerRadius={2}
-    />
-    {/* Kussen zitdeel */}
-    <Rect
-      x={4}
-      y={height * 0.16}
-      width={width * 0.50}
-      height={height * 0.35}
-      fill="#8aaa60"
-      cornerRadius={3}
-    />
-    {/* Kussen ligdeel */}
-    <Rect
-      x={width * 0.57}
-      y={height * 0.16}
-      width={width * 0.40}
-      height={height * 0.80}
-      fill="#8aaa60"
-      cornerRadius={3}
-    />
+    <Rect x={0} y={0} width={width} height={height * 0.55} fill="#7a9a50" stroke={isSelected ? SELECTED_STROKE : '#5a7a30'} strokeWidth={isSelected ? 2 : 1} cornerRadius={4} />
+    <Rect x={width * 0.55} y={height * 0.55} width={width * 0.45} height={height * 0.45} fill="#7a9a50" stroke={isSelected ? SELECTED_STROKE : '#5a7a30'} strokeWidth={isSelected ? 2 : 1} cornerRadius={4} />
+    <Rect x={2} y={2} width={width - 4} height={height * 0.12} fill="#6a8a40" cornerRadius={2} />
+    <Rect x={4} y={height * 0.16} width={width * 0.50} height={height * 0.35} fill="#8aaa60" cornerRadius={3} />
+    <Rect x={width * 0.57} y={height * 0.16} width={width * 0.40} height={height * 0.80} fill="#8aaa60" cornerRadius={3} />
   </Group>
 )
 
@@ -581,11 +459,20 @@ export default function Plattegrond({
     }
   }, [onStageRef])
 
-  // Bereken buitengrenzen één keer
-  const buitenGrenzen = getBuitenGrenzen(muren)
+  // Bereken buitengrenzen één keer (gememoized)
+  const buitenGrenzen = useMemo(() => getBuitenGrenzen(muren), [])
 
-  // Detecteer welke meubels met elkaar overlappen (collision detection)
-  const collidingItemIds = detectCollisions(geplaatsteItems, beschikbareMeubels)
+  // Detecteer welke meubels met elkaar overlappen (gememoized collision detection)
+  const collidingItemIds = useMemo(
+    () => detectCollisions(geplaatsteItems, beschikbareMeubels),
+    [geplaatsteItems]
+  )
+
+  // Gememoizeerde grid arrays (voorkomt herberekening bij elke render)
+  const gridLines = useMemo(() => ({
+    vertical: Array.from({ length: Math.ceil(canvasBreedte / (PIXELS_PER_METER / 2)) }),
+    horizontal: Array.from({ length: Math.ceil(canvasHoogte / (PIXELS_PER_METER / 2)) })
+  }), [canvasBreedte, canvasHoogte])
 
   // Wheel/trackpad zoom handler
   const handleWheel = (e: KonvaEventObject<WheelEvent>) => {
@@ -938,8 +825,8 @@ export default function Plattegrond({
       }}
     >
       <Layer>
-        {/* Subtiele grid achtergrond */}
-        {Array.from({ length: Math.ceil(canvasBreedte / (PIXELS_PER_METER / 2)) }).map((_, i) => (
+        {/* Subtiele grid achtergrond (gememoized arrays) */}
+        {gridLines.vertical.map((_, i) => (
           <Line
             key={`grid-v-${i}`}
             points={[i * PIXELS_PER_METER / 2, 0, i * PIXELS_PER_METER / 2, canvasHoogte]}
@@ -948,7 +835,7 @@ export default function Plattegrond({
             dash={i % 2 === 0 ? undefined : [2, 4]}
           />
         ))}
-        {Array.from({ length: Math.ceil(canvasHoogte / (PIXELS_PER_METER / 2)) }).map((_, i) => (
+        {gridLines.horizontal.map((_, i) => (
           <Line
             key={`grid-h-${i}`}
             points={[0, i * PIXELS_PER_METER / 2, canvasBreedte, i * PIXELS_PER_METER / 2]}

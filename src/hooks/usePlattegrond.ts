@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { doc, onSnapshot, setDoc, getDoc, serverTimestamp, collection, query, where } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import { GeplaatstMeubel, Layout, Share, SharedLayoutInfo } from '../types'
@@ -28,6 +28,9 @@ export function usePlattegrond({ userId }: UsePlattegrondOptions) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [migrating, setMigrating] = useState(false)
+
+  // Ref om te tracken of component gemount is (voorkomt memory leaks)
+  const mountedRef = useRef(true)
 
   // Bereken document path voor user
   const getUserDocPath = useCallback(() => {
@@ -108,6 +111,9 @@ export function usePlattegrond({ userId }: UsePlattegrondOptions) {
   // EFFECT: Luister naar eigen layouts
   // ========================================
   useEffect(() => {
+    // Reset mounted ref bij elke effect run
+    mountedRef.current = true
+
     if (!userId) {
       setLoading(false)
       setLayouts([])
@@ -122,14 +128,19 @@ export function usePlattegrond({ userId }: UsePlattegrondOptions) {
     const unsubscribe = onSnapshot(
       docRef,
       async (snapshot) => {
+        // Check of component nog gemount is voor elke async operatie
+        if (!mountedRef.current) return
+
         if (snapshot.exists()) {
           const data = snapshot.data()
 
           if (data.layouts && data.activeLayoutId) {
             // User heeft al data
             const layoutsArray = Object.values(data.layouts) as Layout[]
-            setLayouts(layoutsArray)
-            setActiveLayoutId(data.activeLayoutId)
+            if (mountedRef.current) {
+              setLayouts(layoutsArray)
+              setActiveLayoutId(data.activeLayoutId)
+            }
           } else {
             // Document bestaat maar heeft geen layouts - maak eerste
             const newLayoutId = generateId()
@@ -141,30 +152,51 @@ export function usePlattegrond({ userId }: UsePlattegrondOptions) {
               updatedAt: new Date()
             }
 
-            await setDoc(docRef, {
-              layouts: { [newLayoutId]: newLayout },
-              activeLayoutId: newLayoutId,
-              updatedAt: serverTimestamp()
-            })
+            try {
+              await setDoc(docRef, {
+                layouts: { [newLayoutId]: newLayout },
+                activeLayoutId: newLayoutId,
+                updatedAt: serverTimestamp()
+              })
 
-            setLayouts([newLayout])
-            setActiveLayoutId(newLayoutId)
+              if (mountedRef.current) {
+                setLayouts([newLayout])
+                setActiveLayoutId(newLayoutId)
+              }
+            } catch (err) {
+              if (mountedRef.current) {
+                console.error('Error creating initial layout:', err)
+              }
+            }
           }
-          setLoading(false)
+          if (mountedRef.current) {
+            setLoading(false)
+          }
         } else {
           // Document bestaat niet - migreer of maak nieuw
-          await migrateFromLegacy()
+          try {
+            await migrateFromLegacy()
+          } catch (err) {
+            if (mountedRef.current) {
+              console.error('Migration error:', err)
+            }
+          }
           // Listener zal opnieuw triggeren na migratie
         }
       },
       (err) => {
         console.error('Firestore error:', err)
-        setError(err.message)
-        setLoading(false)
+        if (mountedRef.current) {
+          setError(err.message)
+          setLoading(false)
+        }
       }
     )
 
-    return unsubscribe
+    return () => {
+      mountedRef.current = false
+      unsubscribe()
+    }
   }, [userId, getUserDocPath, migrateFromLegacy])
 
   // ========================================
@@ -217,60 +249,97 @@ export function usePlattegrond({ userId }: UsePlattegrondOptions) {
   // ACTIONS: Eigen layouts
   // ========================================
 
-  // Opslaan van items naar de actieve layout
+  // State voor save status feedback
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'error' | 'retrying'>('idle')
+  const [saveRetryCount, setSaveRetryCount] = useState(0)
+  const MAX_RETRIES = 3
+
+  // Helper: Exponential backoff delay
+  const getRetryDelay = (attempt: number) => Math.min(1000 * Math.pow(2, attempt), 10000)
+
+  // Opslaan van items naar de actieve layout met retry logica
   const saveItems = useCallback(async (newItems: GeplaatstMeubel[]) => {
     if (!userId) return
 
-    try {
-      if (viewingShareId) {
-        // Opslaan naar gedeelde layout
-        const share = sharedWithMeRaw.find(s => s.id === viewingShareId)
-        if (!share || share.permission !== 'edit') {
-          setError('Geen bewerkrechten voor deze layout')
-          return
-        }
+    const attemptSave = async (attempt: number): Promise<boolean> => {
+      try {
+        if (viewingShareId) {
+          // Opslaan naar gedeelde layout
+          const share = sharedWithMeRaw.find(s => s.id === viewingShareId)
+          if (!share || share.permission !== 'edit') {
+            setError('Geen bewerkrechten voor deze layout')
+            return false
+          }
 
-        const shareRef = doc(db, 'shares', viewingShareId)
-        await setDoc(shareRef, {
-          ...share,
-          layoutSnapshot: {
-            ...share.layoutSnapshot,
+          const shareRef = doc(db, 'shares', viewingShareId)
+          await setDoc(shareRef, {
+            ...share,
+            layoutSnapshot: {
+              ...share.layoutSnapshot,
+              items: newItems,
+              updatedAt: new Date()
+            },
+            updatedAt: serverTimestamp()
+          }, { merge: true })
+        } else {
+          // Opslaan naar eigen layout
+          if (!activeLayoutId) return false
+
+          const docRef = doc(db, getUserDocPath()!)
+
+          const updatedLayout: Layout = {
+            ...activeLayout!,
             items: newItems,
             updatedAt: new Date()
-          },
-          updatedAt: serverTimestamp()
-        }, { merge: true })
-      } else {
-        // Opslaan naar eigen layout
-        if (!activeLayoutId) return
-
-        const docRef = doc(db, getUserDocPath()!)
-
-        const updatedLayout: Layout = {
-          ...activeLayout!,
-          items: newItems,
-          updatedAt: new Date()
-        }
-
-        const layoutsObj: Record<string, Layout> = {}
-        layouts.forEach(l => {
-          if (l.id === activeLayoutId) {
-            layoutsObj[l.id] = updatedLayout
-          } else {
-            layoutsObj[l.id] = l
           }
-        })
 
-        await setDoc(docRef, {
-          layouts: layoutsObj,
-          activeLayoutId,
-          updatedAt: serverTimestamp()
-        })
+          const layoutsObj: Record<string, Layout> = {}
+          layouts.forEach(l => {
+            if (l.id === activeLayoutId) {
+              layoutsObj[l.id] = updatedLayout
+            } else {
+              layoutsObj[l.id] = l
+            }
+          })
+
+          await setDoc(docRef, {
+            layouts: layoutsObj,
+            activeLayoutId,
+            updatedAt: serverTimestamp()
+          })
+        }
+        return true
+      } catch (err) {
+        console.error(`Save attempt ${attempt + 1} failed:`, err)
+        return false
       }
-    } catch (err) {
-      console.error('Fout bij opslaan:', err)
-      setError(err instanceof Error ? err.message : 'Onbekende fout bij opslaan')
     }
+
+    // Start save met retry logica
+    setSaveStatus('saving')
+    setError(null)
+
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      if (attempt > 0) {
+        setSaveStatus('retrying')
+        setSaveRetryCount(attempt)
+        const delay = getRetryDelay(attempt)
+        console.log(`Retrying save in ${delay}ms (attempt ${attempt + 1}/${MAX_RETRIES + 1})`)
+        await new Promise(resolve => setTimeout(resolve, delay))
+      }
+
+      const success = await attemptSave(attempt)
+      if (success) {
+        setSaveStatus('idle')
+        setSaveRetryCount(0)
+        return
+      }
+    }
+
+    // Alle retries gefaald
+    setSaveStatus('error')
+    setError('Opslaan mislukt na meerdere pogingen. Controleer je internetverbinding.')
+    console.error('All save attempts failed')
   }, [userId, activeLayoutId, activeLayout, layouts, viewingShareId, sharedWithMeRaw, getUserDocPath])
 
   // Wissel naar een andere eigen layout
@@ -458,6 +527,10 @@ export function usePlattegrond({ userId }: UsePlattegrondOptions) {
     loading: loading || migrating,
     error,
     saveItems,
+
+    // Save status (voor UI feedback)
+    saveStatus,
+    saveRetryCount,
 
     // Eigen layouts
     layouts,

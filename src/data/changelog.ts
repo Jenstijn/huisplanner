@@ -17,6 +17,18 @@ export interface Release {
 
 export const changelog: Release[] = [
   {
+    version: '1.10.0',
+    date: '2026-02-06',
+    title: 'Security & Performance',
+    entries: [
+      { type: 'fix', description: 'Security: Share invites worden niet meer automatisch geaccepteerd - expliciete bevestiging vereist' },
+      { type: 'fix', description: 'Memory leak opgelost in Firestore listeners bij snel wisselen van pagina' },
+      { type: 'improvement', description: 'Automatische retry bij mislukte saves met exponential backoff (tot 3 pogingen)' },
+      { type: 'improvement', description: 'Performance: collision detection en grid rendering geoptimaliseerd met useMemo' },
+      { type: 'improvement', description: 'Performance: resize events nu gedebounced voor soepelere ervaring' },
+    ]
+  },
+  {
     version: '1.9.0',
     date: '2026-02-05',
     title: 'Nuttige Features',

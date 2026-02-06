@@ -21,7 +21,7 @@ import { useHistory } from './hooks/useHistory'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 
 // App versie - update bij elke release
-const APP_VERSION = '1.9.0'
+const APP_VERSION = '1.10.0'
 
 // Canvas dimensies (moet overeenkomen met Plattegrond.tsx)
 const CANVAS_BREEDTE_M = 9

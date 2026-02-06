@@ -1,6 +1,20 @@
 import { useState, useEffect } from 'react'
 
 /**
+ * Eenvoudige debounce helper
+ */
+function debounce<T extends (...args: unknown[]) => void>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null
+  return (...args: Parameters<T>) => {
+    if (timeoutId) clearTimeout(timeoutId)
+    timeoutId = setTimeout(() => func(...args), wait)
+  }
+}
+
+/**
  * Hook om te detecteren of de gebruiker op een mobiel apparaat zit.
  * Checkt op:
  * - Schermbreedte < 768px
@@ -22,17 +36,20 @@ export function useIsMobile() {
       setIsLandscape(window.innerWidth > window.innerHeight)
     }
 
-    // Initial check
+    // Debounced versie voor resize events (voorkomt performance issues)
+    const debouncedCheckMobile = debounce(checkMobile, 150)
+
+    // Initial check (direct, niet gedebounced)
     checkMobile()
 
-    // Luister naar resize events
-    window.addEventListener('resize', checkMobile)
+    // Luister naar resize events (gedebounced)
+    window.addEventListener('resize', debouncedCheckMobile)
 
-    // Luister naar orientation changes (mobiel specifiek)
+    // Luister naar orientation changes (direct, want die happen niet vaak)
     window.addEventListener('orientationchange', checkMobile)
 
     return () => {
-      window.removeEventListener('resize', checkMobile)
+      window.removeEventListener('resize', debouncedCheckMobile)
       window.removeEventListener('orientationchange', checkMobile)
     }
   }, [])

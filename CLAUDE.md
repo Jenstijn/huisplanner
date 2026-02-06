@@ -474,3 +474,149 @@ Dit voorkomt dat er bugs worden opgeleverd die pas later ontdekt worden.
    - Check `.gitignore` bevat: `.env`, `.env.local`, `.env.*.local`, `.env.vercel`
    - Maak NOOIT bestanden aan met "credentials", "secrets", of "keys" in de naam
    - Environment variables horen in hosting dashboard (Vercel), NIET in Git
+
+### React Hooks Performance Patterns (Best Practices)
+
+**useMemo voor berekeningen die niet elke render nodig zijn:**
+```typescript
+// FOUT: Herberekent ELKE render
+const collidingItems = detectCollisions(items, meubels)
+
+// CORRECT: Alleen herberekenen als dependencies veranderen
+const collidingItems = useMemo(
+  () => detectCollisions(items, meubels),
+  [items, meubels]
+)
+```
+
+**Wanneer useMemo gebruiken:**
+- Collision detection (O(n²) operaties)
+- Array.from() voor grid generatie
+- Complexe filtering/mapping van grote arrays
+- Berekeningen die niet afhangen van elke state change
+
+**Wanneer useMemo NIET nodig:**
+- Simpele variabele assignments
+- Primitieve waarden
+- Berekeningen die sowieso elke render moeten draaien
+
+### Debouncing Event Handlers
+
+**Resize events kunnen 60+ keer per seconde vuren - altijd debouncen:**
+```typescript
+function debounce<T extends (...args: unknown[]) => void>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null
+  return (...args: Parameters<T>) => {
+    if (timeoutId) clearTimeout(timeoutId)
+    timeoutId = setTimeout(() => func(...args), wait)
+  }
+}
+
+// Gebruik: 150ms delay voor resize
+const debouncedHandler = debounce(checkMobile, 150)
+window.addEventListener('resize', debouncedHandler)
+```
+
+### Memory Leak Preventie in Async Callbacks
+
+**Probleem:** Firestore `onSnapshot` callbacks kunnen async zijn en state updaten na unmount.
+
+**Oplossing:** Gebruik een `mountedRef` om te tracken of component nog gemount is:
+```typescript
+const mountedRef = useRef(true)
+
+useEffect(() => {
+  mountedRef.current = true  // Reset bij effect start
+
+  const unsubscribe = onSnapshot(docRef, async (snapshot) => {
+    // Check VOOR elke setState
+    if (!mountedRef.current) return
+
+    // Async operaties...
+    await someAsyncWork()
+
+    // Check OPNIEUW na async
+    if (!mountedRef.current) return
+    setState(newValue)
+  })
+
+  return () => {
+    mountedRef.current = false  // Markeer als unmounted
+    unsubscribe()
+  }
+}, [deps])
+```
+
+### Retry Logic met Exponential Backoff
+
+**Voor network operaties die kunnen falen (saves, API calls):**
+```typescript
+const MAX_RETRIES = 3
+const getRetryDelay = (attempt: number) =>
+  Math.min(1000 * Math.pow(2, attempt), 10000)
+// attempt 0: 1000ms, 1: 2000ms, 2: 4000ms, 3: 8000ms (max 10000ms)
+
+for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+  if (attempt > 0) {
+    await new Promise(r => setTimeout(r, getRetryDelay(attempt)))
+  }
+
+  const success = await attemptOperation()
+  if (success) return
+}
+// Alle pogingen gefaald - toon error aan gebruiker
+```
+
+### Security: Auto-Accept Vulnerabilities
+
+**NOOIT automatisch acties uitvoeren op basis van externe data:**
+```typescript
+// FOUT: Automatisch invites accepteren
+useEffect(() => {
+  invites.forEach(invite => acceptInvite(invite))  // GEVAARLIJK!
+}, [invites])
+
+// CORRECT: Toon aan gebruiker, laat hen beslissen
+return (
+  <InviteNotification
+    invites={pendingInvites}
+    onAccept={(invite) => acceptInvite(invite)}
+    onDecline={(invite) => declineInvite(invite)}
+  />
+)
+```
+
+### Factory Pattern vs Specifieke Implementaties
+
+**Wanneer Factory Pattern NIET te gebruiken:**
+- Wanneer elk item unieke visuele details heeft (cushions, legs, drawers)
+- Wanneer de configuratie even complex wordt als de originele code
+- Wanneer leesbaarheid belangrijker is dan DRY
+
+**Pragmatische aanpak:**
+- Extraheer gedeelde CONSTANTEN (kleuren, stroke widths)
+- Houd specifieke renderers apart voor unieke meubels
+- Factory alleen voor items met IDENTIEKE structuur
+
+```typescript
+// Gedeelde constante - WEL extraheren
+const SELECTED_STROKE = '#3b82f6'
+
+// Specifieke renderers - NIET forceren in factory
+const renderBank = (...) => { /* unieke cushion details */ }
+const renderStoel = (...) => { /* unieke poten details */ }
+```
+
+### Codebase Analyse Workflow
+
+**Bij grote codebase review:**
+1. Gebruik parallelle Explore agents voor verschillende domeinen:
+   - Components (React, performance, accessibility)
+   - Hooks/Utils (Firebase, error handling, state)
+   - Types/Architecture (TypeScript, structuur)
+2. Prioriteer fixes: Security > Performance > Architecture > Types
+3. Implementeer incrementeel, test na elke fase
+4. Update versie en changelog bij elke merge
